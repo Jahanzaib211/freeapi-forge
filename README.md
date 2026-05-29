@@ -1,114 +1,219 @@
-# Forge Studio — Monster AI Lab Control Center
+# Forge Studio
 
-**Made by Jahanzaib Ali** | [github.com/Jahanzaib211](https://github.com/Jahanzaib211) | [www.alilabsx.com](https://www.alilabsx.com)
-
-A production-grade, AI lab-level LLM routing platform with intelligent provider selection, budget tracking, circuit breaking, MCP integration, skills system, system monitoring, and a Manus/Genspark-style product builder. Built with React 19, Express 4, tRPC 11, PostgreSQL, Redis, and WebSocket.
+**by Jahanzaib Ali** | [github.com/Jahanzaib211](https://github.com/Jahanzaib211) | [alilabsx.com](https://alilabsx.com)
 
 ---
 
-## Features
+## What is Forge Studio?
 
-### AI Gateway
-- **Virtual Keys**: API key management with budget limits, rate limits (TPM/RPM), model restrictions, key rotation
-- **Playground**: Streaming chat with model selection, task types, real-time token/latency tracking
-- **Models + Endpoints**: LiteLLM config management, add/remove/test models without restart
-- **Agentic**: Agent management with system prompts, tools, MCP servers, A2A protocol support
-- **MCP Servers**: Host + Server (Model Context Protocol) - connect to external MCP servers, expose Forge Studio as MCP server
-- **Skills**: Filesystem-based SKILL.md system with progressive disclosure and script execution
-- **Guardrails**: Pre/during/post-call content filtering (PII detection, injection blocking, toxicity)
-- **Policies**: Group guardrails and attach to teams/keys/models
-- **Tools**: Search tools, vector stores, tool policies
+Forge Studio is a self-hosted AI lab control center. It acts as a proxy layer that sits between your applications and LLM providers (OpenAI, Groq, Gemini, Mistral, Ollama, llama.cpp, and others). You configure your API keys once, and Forge Studio handles routing, fallbacks, budget tracking, and monitoring.
 
-### Forge Builder (Manus/Genspark-style)
-- **Resource Tree**: Browse models, MCP servers, skills from the lab
-- **Builder Canvas**: Add workflow blocks (System Prompt, Model Selection, Tool Config, Schema, Workflow Steps, Code Block)
-- **Test Panel**: Run test queries with streaming output
-- **Deploy**: Save to localStorage, export as JSON, deploy as agent
-- **Real-time**: Live preview of configuration
-
-### Observability
-- **Usage**: Analytics dashboard with spend/token tracking per key/team/model
-- **Logs**: Detailed request logs with filtering, CSV export
-- **Guardrails Monitor**: Execution results, detection details, policy matches
-
-### Access Control
-- **Teams**: Multi-tenant team management with budgets
-- **Internal Users**: User role management (admin/member/viewer)
-- **Organizations**: Multi-tenant org isolation
-- **Access Groups**: Reusable resource sets (models, MCP servers, agents)
-- **Budgets**: Per-team budget tracking with real-time spend
-
-### System
-- **System Monitor**: Real-time CPU/GPU/RAM monitoring via WebSocket (1s updates)
-  - Per-core CPU usage gauges
-  - RAM/Swap usage with progress bars
-  - GPU utilization, VRAM, temperature, power, fan speed (via nvidia-smi)
-  - Per-process GPU VRAM attribution
-  - AI process detection (Ollama, llama.cpp, Python, vLLM)
-  - Top processes table with kill capability
-- **Process Manager**: PM2 process management (start/stop/restart/delete/logs)
-- **LLM Discoverer**: Auto-detect local LLMs from Ollama, llama.cpp, GGUF files, HuggingFace cache
-
-### Developer Tools
-- **API Reference**: Interactive Swagger documentation
-- **AI Hub**: Public model catalog for developers
-- **OpenAI Compatible**: `/v1/chat/completions` endpoint
-
-### Inference Lab
-- **GPU Offloading**: Configure GPU layers (ngl 0-100) from GUI
-- **Context/Batch**: Context size, batch size, ubatch size sliders
-- **Advanced**: Flash attention, KV cache quantization, rope scaling, parallel sequences
-- **Real-time GPU Stats**: VRAM usage, utilization, temperature during inference
-- **Model Info**: File size, quantization, VRAM estimates
-
-### Settings
-- **Admin Config**: SSO, default team, UI visibility
-- **Branding**: Logo, app name, color theme
-- **Theme Toggle**: Light/Dark mode
+The key idea: you paste any OpenAI-compatible API URL and key into Forge Studio, and it works. No vendor lock-in. No complex configuration. If it speaks the OpenAI API format, Forge Studio can proxy it.
 
 ---
 
-## Architecture
+## What It Actually Does
 
-```
-Browser ──→ Forge Studio (port 5051) ──→ LiteLLM Proxy (5050) ──→ 30+ models
-                    │                          │
-                    ├──→ PostgreSQL (5434)       ├──→ Groq (free)
-                    ├──→ Redis (6379)            ├──→ Gemini (free)
-                    ├──→ WebSocket (/ws)         ├──→ Mistral (free)
-                    └──→ MCP SSE (/mcp/sse)      ├──→ Cerebras (free)
-                                                 ├──→ SambaNova (free)
-                                                 ├──→ Ollama (local)
-                                                 └──→ llama.cpp (local)
-```
+### 1. LLM Proxy
 
-### Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, Tailwind 4, shadcn/ui, Recharts, wouter, Framer Motion |
-| Backend | Express 4, tRPC 11, WebSocket (ws), Zod validation |
-| Database | PostgreSQL 17 (Drizzle ORM) - 15 tables |
-| Cache | Redis 7 (ioredis) - circuit breaker, real-time stats |
-| LLM Proxy | LiteLLM (30+ models across 10+ providers) |
-| Monitoring | nvidia-smi, PM2, /proc filesystem |
-| MCP | Model Context Protocol (Host + Server) |
-| Deploy | PM2, Docker ready |
+Forge Studio receives chat completion requests and routes them to whichever provider has the model you asked for. It supports:
+
+- **Cloud providers**: Groq, Google Gemini, Mistral, Cerebras, SambaNova, Cohere, OpenRouter, NVIDIA NIM, Cloudflare Workers AI, Together, DeepInfra, Anyscale, Fireworks, Perplexity
+- **Local models**: Ollama, llama.cpp (any GGUF model)
+- **Custom providers**: Any OpenAI-compatible endpoint you paste in
+
+If a provider goes down, Forge Studio automatically falls back to another provider for the same model. This is handled by a circuit breaker system backed by Redis.
+
+### 2. Custom Providers (Paste-Any-API)
+
+Go to the Custom Providers page, paste an API URL and key, and Forge Studio auto-discovers what models are available. This means you can add:
+
+- A self-hosted vLLM instance
+- An Azure OpenAI endpoint
+- A HuggingFace Inference API
+- Any other OpenAI-compatible service
+
+Once added, models from that provider appear in your model list and can be used through the standard `/v1/chat/completions` endpoint.
+
+### 3. Standalone Mode
+
+Forge Studio can run without LiteLLM. The direct proxy service routes requests straight to providers. LiteLLM is optional - it adds more sophisticated routing and load balancing, but Forge Studio works on its own.
+
+### 4. HuggingFace Hub
+
+Search for models on HuggingFace directly from Forge Studio. The system:
+
+- Searches the HuggingFace API
+- Shows model details (size, quantization, downloads)
+- Checks your hardware (GPU VRAM, RAM, disk) against model requirements
+- Estimates whether the model will run on your machine
+- Downloads GGUF files directly to your models directory
+
+### 5. Inference Lab
+
+A chat interface that connects directly to your local backends. You can configure:
+
+- GPU layers (ngl) for llama.cpp offloading
+- Context size, batch size, threads
+- Flash attention, KV cache quantization
+- Temperature, max tokens, top-p
+
+Real-time GPU stats (VRAM usage, temperature, tok/s) display during inference.
+
+### 6. Model Manager
+
+Add, remove, and test models in your LiteLLM configuration. Includes:
+
+- Quick-add buttons for common free providers
+- One-click test for each model
+- Full LiteLLM config viewer
+- Standalone mode indicator
+
+### 7. System Monitor
+
+Real-time system monitoring via WebSocket (updates every 2 seconds):
+
+- Per-core CPU usage
+- RAM and swap usage
+- GPU utilization, VRAM, temperature, power draw (via nvidia-smi)
+- Per-process GPU memory attribution
+- AI process detection (identifies Ollama, llama-server, Python inference processes)
+- Top processes with kill capability
+
+### 8. Process Manager
+
+View and control PM2 processes from the GUI:
+
+- Start, stop, restart, delete processes
+- View stdout/stderr logs
+- See CPU, memory, uptime, restart count
+
+### 9. LLM Discoverer
+
+Automatically detects locally available models:
+
+- Ollama models (via `ollama list` and `ollama ps`)
+- llama.cpp servers (from running processes)
+- GGUF files on disk
+- HuggingFace cache
+
+### 10. Forge Builder
+
+A workflow builder for creating AI products. You can:
+
+- Add workflow blocks (system prompt, model selection, tool config, code blocks)
+- Connect to MCP servers for external tools
+- Test the workflow with streaming output
+- Deploy as an agent
+- Save/load projects from localStorage
+
+### 11. MCP Integration
+
+**As MCP Host**: Connect to external MCP servers to use their tools in your workflows.
+
+**As MCP Server**: Forge Studio exposes its own capabilities (chat completion, model listing, system stats) as MCP tools at `/mcp/sse`.
+
+### 12. Skills
+
+A filesystem-based skill system. Skills are directories with `SKILL.md` files containing instructions and scripts. Built-in skills:
+
+- Web search
+- Code executor
+- System monitor
+
+### 13. Virtual Keys
+
+Create API keys with:
+
+- Budget limits (monthly spend cap)
+- Rate limits (tokens per minute, requests per minute)
+- Model restrictions (which models the key can access)
+- Expiration dates
+- Key rotation
+
+### 14. Guardrails
+
+Content filtering that runs before, during, or after LLM calls:
+
+- PII detection (email, phone, SSN, credit card)
+- Prompt injection blocking
+- Toxicity keyword filtering
+
+### 15. Budget Tracking
+
+Per-team monthly budget limits with real-time spend tracking. The budget page shows:
+
+- Total budget across all teams
+- Current spend
+- Remaining budget
+- Per-team utilization with inline editing
+
+### 16. Analytics
+
+Usage analytics from LiteLLM SpendLogs:
+
+- Request volume over time
+- Top models by usage
+- Provider performance (success rate)
+- Per-model stats (latency, tokens, cost)
+
+### 17. Error Logging
+
+All errors are captured and displayed in the Error Logs page:
+
+- Filter by level (error, warn, info, debug)
+- Filter by source
+- Expandable stack traces
+- CSV export
+
+### 18. Access Control
+
+- Teams with budget limits
+- Internal users with roles (admin, user)
+- Organizations for multi-tenant isolation
+- Access Groups for reusable resource sets
+
+### 19. Settings
+
+Configure the application:
+
+- App name, branding
+- Theme (light/dark mode)
+- Page visibility per role
 
 ---
 
-## Quick Start
+## Tech Stack
+
+| Layer | What | Why |
+|-------|------|-----|
+| Frontend | React 19, Tailwind CSS 4, shadcn/ui, Recharts, wouter | Fast, type-safe, good component library |
+| Backend | Express 4, tRPC 11, WebSocket (ws) | Type-safe API, real-time updates |
+| Database | PostgreSQL (Drizzle ORM) | Reliable, good for structured data |
+| Cache | Redis (ioredis) | Circuit breaker state, session cache |
+| LLM Proxy | LiteLLM (optional) | Multi-provider routing, fallbacks |
+| Process Manager | PM2 | Production process management |
+
+---
+
+## Running It
 
 ```bash
-# Install dependencies
+# Clone
+git clone https://github.com/Jahanzaib211/freeapi-forge.git
+cd freeapi-forge
+
+# Install
 pnpm install
 
-# Start Redis (if not running)
-docker run -d --name redis -p 6379:6379 redis:alpine
-
-# Seed database
+# Database
+# Make sure PostgreSQL is running on port 5434
 pnpm tsx server/seed.ts
 
-# Start development server
+# Redis (needed for circuit breaker)
+docker run -d --name redis -p 6379:6379 redis:alpine
+
+# Start
 pnpm dev
 ```
 
@@ -118,90 +223,79 @@ Open http://localhost:5051/
 
 ## Environment Variables
 
-```env
+```
 DATABASE_URL=postgresql://litellm_user:litellm_password_123@localhost:5434/freeapi_forge
 REDIS_URL=redis://localhost:6379/1
-LITELLM_URL=http://localhost:5050
-LITELLM_API_KEY=sk-ai-lab-master-key
+LITELLM_URL=http://localhost:5050        # optional - Forge works without it
+LITELLM_API_KEY=sk-ai-lab-master-key     # optional
 PORT=5051
-NODE_ENV=development
 ```
 
 ---
 
-## PM2 Production Deploy
+## How the Proxy Works
 
-```bash
-# Start all services
-pm2 start ecosystem.config.cjs
-
-# Save process list
-pm2 save
-
-# Setup auto-start on boot
-pm2 startup
+```
+Your App
+  │
+  ▼
+Forge Studio (:5051)
+  │
+  ├─ /v1/chat/completions (OpenAI-compatible)
+  ├─ /api/stream/chat (SSE streaming)
+  ├─ /api/trpc/* (tRPC for the UI)
+  │
+  ├─ Check custom providers first
+  │   └─ If model matches a custom provider → route directly
+  │
+  └─ Fall back to LiteLLM (if configured)
+      └─ LiteLLM routes to Groq/Gemini/Mistral/etc.
 ```
 
----
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /v1/chat/completions` | OpenAI-compatible chat completions |
-| `GET /v1/models` | List available models |
-| `POST /api/stream/chat` | SSE streaming chat |
-| `GET /api/trpc/*` | tRPC API |
-| `GET /mcp/sse` | MCP Server-Sent Events |
-| `POST /mcp/message` | MCP JSON-RPC messages |
-| `GET /api-docs` | API documentation |
-| `WS /ws` | WebSocket for real-time system stats |
+You can use Forge Studio as:
+1. **A proxy in front of LiteLLM** - adds UI, monitoring, budget tracking
+2. **A standalone proxy** - route directly to providers without LiteLLM
+3. **Both** - LiteLLM for complex routing, Forge Studio for the interface
 
 ---
 
-## Database Schema (15 tables)
+## Database
 
-- `users` - User authentication and roles
-- `teams` - Multi-tenant team management
-- `apiKeys` - API key management
-- `providers` - LLM provider configurations
-- `requestHistory` - Request logging
-- `budgetLimits` - Budget tracking
-- `auditLogs` - Audit trail
-- `virtualKeys` - Virtual API keys with budgets
-- `organizations` - Org isolation
-- `accessGroups` - Reusable resource sets
-- `mcpServers` - MCP server registry
-- `skills` - Installed skills
-- `guardrails` - Content filtering rules
-- `policies` - Guardrail groupings
-- `agents` - Agent configurations
-- `usageLogs` - Usage analytics
-- `systemEvents` - Error/event logging
+19 tables covering:
+
+- Users, teams, organizations
+- API keys, virtual keys
+- Providers, custom providers
+- Request history, usage logs
+- Budget limits, audit logs
+- MCP servers, skills, agents
+- Guardrails, policies
+- System events (errors)
 
 ---
 
-## LiteLLM Integration
+## What Makes It Different
 
-Forge Studio connects to LiteLLM proxy which routes to 30+ models:
+Most LLM tools do one thing: route requests. Forge Studio bundles the full lifecycle:
 
-### Free Providers
-- **Groq**: llama-3.3-70b, llama-3.1-8b, qwen3-32b, llama-4-scout
-- **Google Gemini**: gemini-2.5-flash, gemini-2.5-flash-lite
-- **Mistral**: mistral-large, codestral-latest, open-mistral-nemo
-- **Cerebras**: gpt-oss-120b, zai-glm-4.7
-- **SambaNova**: Meta-Llama-3.3-70B-Instruct
-- **Cohere**: command-a, command-r7b, aya-expanse-32b
-- **OpenRouter**: nemotron-super, deepseek-v4-flash, gpt-oss-120b
-- **NVIDIA NIM**: llama-3.3-70b, nemotron-super
-- **Cloudflare**: llama-3.1-8b, llama-3.3-70b
+- **Discovery**: Find and pull models from HuggingFace
+- **Configuration**: Add providers, set up routing
+- **Proxying**: Route requests with automatic fallback
+- **Monitoring**: See what's happening in real-time
+- **Budgeting**: Track and limit spending
+- **Building**: Create AI products with the Forge Builder
+- **Securing**: Guardrails, access control, audit logs
 
-### Local Models
-- **Ollama**: Qwopus-GLM-18B, Hermes-4-14B
-- **llama.cpp**: DeepSeek-Coder-V2-Lite (running on port 8085)
+Everything runs on your hardware. No data leaves your machine unless you configure a cloud provider.
 
 ---
 
 ## License
 
-MIT License - Made by Jahanzaib Ali
+MIT
+
+---
+
+## Author
+
+Jahanzaib Ali - [alilabsx.com](https://alilabsx.com) - [github.com/Jahanzaib211](https://github.com/Jahanzaib211)
