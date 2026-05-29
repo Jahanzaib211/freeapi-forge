@@ -17,7 +17,7 @@ module.exports = {
       name: "forge-studio",
       script: "pnpm",
       args: "dev",
-      cwd: "/home/jahanzaib/freeapi-forge",
+      cwd: "/home/jahanzaib/forge-studio",
       autorestart: true,
       watch: false,
       env: {

@@ -16,6 +16,7 @@ import {
   getOrCreateBudgetLimit,
   createAuditLog,
   updateBudgetSpend,
+  getTeamsByOwnerId,
 } from "./db";
 import { providerService } from "./services/provider_service";
 import { llmRouter } from "./services/llm_router";
@@ -53,6 +54,14 @@ import { webhookRouter } from "./routers/webhook_router";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
+async function resolveTeamId(ctx: { user?: { id?: number } | null }): Promise<number> {
+  if (ctx.user?.id) {
+    const teams = await getTeamsByOwnerId(ctx.user.id);
+    if (teams.length > 0) return teams[0].id;
+  }
+  return 1;
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -84,8 +93,9 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        const teamId = await resolveTeamId(ctx);
         const monthYear = new Date().toISOString().slice(0, 7);
-        const budget = await getOrCreateBudgetLimit(1, monthYear, 10);
+        const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10);
         
         if (budget) {
           const currentSpendUsd = budget.currentSpendUsd / 1000000;
@@ -98,7 +108,6 @@ export const appRouter = router({
 
         // Check if any model in the messages matches a custom provider
         let response;
-        let customModel = input.messages[0]?.content ? null : null;
 
         // Try to find a custom provider by checking the model from taskType mapping
         const taskModelMap: Record<string, string> = {
@@ -135,7 +144,6 @@ export const appRouter = router({
             };
           } catch (err: any) {
             console.error(`[CustomProvider] ${customProvider.name} failed:`, err.message);
-            // Fall through to LiteLLM
           }
         }
 
@@ -145,7 +153,7 @@ export const appRouter = router({
             taskType: input.taskType,
             maxTokens: input.maxTokens,
             temperature: input.temperature,
-            teamId: input.teamId,
+            teamId: String(teamId),
           });
         }
 
@@ -166,7 +174,7 @@ export const appRouter = router({
 
         await createRequestHistory(
           response.id,
-          1,
+          teamId,
           providerId,
           input.taskType,
           response.usage.prompt_tokens,
@@ -175,11 +183,11 @@ export const appRouter = router({
           isError ? "error" : "success"
         );
 
-        await updateBudgetSpend(1, monthYear, costUsd);
+        await updateBudgetSpend(teamId, monthYear, costUsd);
 
         await createAuditLog(
           ctx.user?.id || null,
-          1, // teamId
+          teamId,
           "CHAT_COMPLETION",
           JSON.stringify({
             model: input.taskType,
@@ -228,9 +236,10 @@ export const appRouter = router({
   budget: router({
     getMonthlySpend: publicProcedure
       .input(z.object({ teamId: z.string().default("default") }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        const teamIdNum = await resolveTeamId(ctx);
         const monthYear = new Date().toISOString().slice(0, 7);
-        const budget = await getOrCreateBudgetLimit(1, monthYear, 10);
+        const budget = await getOrCreateBudgetLimit(teamIdNum, monthYear, 10);
 
         return {
           teamId: input.teamId,
@@ -253,9 +262,10 @@ export const appRouter = router({
           throw new Error("Unauthorized");
         }
 
+        const teamIdNum = await resolveTeamId(ctx);
         const monthYear = new Date().toISOString().slice(0, 7);
-        await updateBudgetLimit(1, monthYear, input.newLimit);
-        await createAuditLog(ctx.user.id, 1, "UPDATE_BUDGET_LIMIT", `New limit: $${input.newLimit}`);
+        await updateBudgetLimit(teamIdNum, monthYear, input.newLimit);
+        await createAuditLog(ctx.user.id, teamIdNum, "UPDATE_BUDGET_LIMIT", `New limit: $${input.newLimit}`);
 
         return { success: true };
       }),
@@ -271,9 +281,10 @@ export const appRouter = router({
           offset: z.number().int().min(0).default(0),
         })
       )
-      .query(async ({ input }) => {
-        const history = await getRequestHistory(1, input.limit, input.offset);
-        const total = await getRequestHistoryCount(1);
+      .query(async ({ input, ctx }) => {
+        const teamIdNum = await resolveTeamId(ctx);
+        const history = await getRequestHistory(teamIdNum, input.limit, input.offset);
+        const total = await getRequestHistoryCount(teamIdNum);
 
         return {
           requests: history.map((r) => ({

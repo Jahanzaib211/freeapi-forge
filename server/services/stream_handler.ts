@@ -4,6 +4,9 @@ import { providerService } from "./provider_service";
 import { customProviderService } from "./custom_provider";
 import { directProxyStream } from "./direct_proxy";
 import { errorLogger } from "./error_logger";
+import { guardrailService } from "./guardrail_service";
+import { virtualKeyService } from "./virtual_key_service";
+import { createRequestHistory, createAuditLog, updateBudgetSpend, getOrCreateBudgetLimit, getAllProviders } from "../db";
 
 const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   chat: "fast-70b",
@@ -14,16 +17,110 @@ const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   local: "qwen-moe",
 };
 
+async function resolveTeamIdFromRequest(req: Request): Promise<number> {
+  try {
+    const apiKey = req.headers["x-api-key"];
+    if (apiKey) {
+      const validation = await virtualKeyService.validateKey(apiKey as string);
+      if (validation.valid && validation.keyRecord) {
+        return validation.keyRecord.teamId;
+      }
+    }
+  } catch {}
+  return 1;
+}
+
 export async function handleStreamChat(req: Request, res: Response) {
   const { messages, taskType, maxTokens, temperature, model: directModel } = req.body;
 
   const model = directModel || TASK_TYPE_MODEL_MAP[taskType || "chat"] || "fast-70b";
+  const requestId = `stream_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const startTime = Date.now();
+
+  // Resolve team and user context
+  const teamId = await resolveTeamIdFromRequest(req);
+  const monthYear = new Date().toISOString().slice(0, 7);
+  const inputText = messages?.map((m: any) => m.content || "").join("\n") || "";
+
+  // Budget check
+  try {
+    const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10);
+    if (budget) {
+      const currentSpendUsd = budget.currentSpendUsd / 1000000;
+      if (currentSpendUsd >= budget.monthlyLimitUsd) {
+        res.status(429).json({ error: `Monthly budget limit exceeded: $${currentSpendUsd.toFixed(2)} / $${budget.monthlyLimitUsd}` });
+        return;
+      }
+    }
+  } catch (err: any) {
+    errorLogger.error("stream_handler", `Budget check failed: ${err.message}`, err, { model });
+  }
+
+  // Pre-call guardrails
+  try {
+    const guardrailResults = await guardrailService.runPreCallGuardrails(inputText, model);
+    const blocked = guardrailResults.filter((g) => !g.passed);
+    if (blocked.length > 0) {
+      const violations = blocked.flatMap((g) => g.violations.map((v) => v.matched));
+      errorLogger.warn("stream_handler", "Pre-call guardrail blocked", { model, violations });
+      res.status(403).json({ error: "Request blocked by guardrails", violations });
+      return;
+    }
+  } catch (err: any) {
+    errorLogger.error("stream_handler", `Guardrail check failed: ${err.message}`, err, { model });
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+
+  // Track completion for governance logging
+  const recordCompletion = async (providerName: string, tokenCount: number, error: boolean, fullContent: string) => {
+    const costUsd = (tokenCount / 1000000) * 0.0001;
+    const latencyMs = Date.now() - startTime;
+
+    if (error) {
+      await providerService.recordFailure(providerName);
+    } else {
+      await providerService.recordSuccess(providerName);
+    }
+
+    const allProviders = await getAllProviders();
+    const providerRecord = allProviders.find((p: any) => p.name === providerName);
+
+    await createRequestHistory(
+      requestId,
+      teamId,
+      providerRecord?.id || null,
+      taskType || "chat",
+      0,
+      tokenCount,
+      costUsd,
+      error ? "error" : "success"
+    );
+
+    await updateBudgetSpend(teamId, monthYear, costUsd);
+
+    await createAuditLog(
+      null,
+      teamId,
+      "CHAT_COMPLETION",
+      JSON.stringify({ model, tokens: tokenCount, latencyMs, provider: providerName })
+    );
+
+    // Post-call guardrails
+    if (fullContent) {
+      try {
+        const postResults = await guardrailService.runPostCallGuardrails(fullContent, model);
+        const postBlocked = postResults.filter((g) => !g.passed);
+        if (postBlocked.length > 0) {
+          errorLogger.warn("stream_handler", "Post-call guardrail flagged", { model, violations: postBlocked.flatMap((g) => g.violations.map((v) => v.matched)) });
+        }
+      } catch {}
+    }
+  };
 
   // Check custom providers first (standalone mode)
   const customProvider = await customProviderService.findProviderForModel(model);
@@ -41,6 +138,8 @@ export async function handleStreamChat(req: Request, res: Response) {
 
       const reader = upstream.body?.getReader();
       const decoder = new TextDecoder();
+      let fullContent = "";
+      let tokenCount = 0;
 
       if (reader) {
         try {
@@ -49,18 +148,19 @@ export async function handleStreamChat(req: Request, res: Response) {
             if (done) break;
             const chunk = decoder.decode(value, { stream: true });
             res.write(chunk);
+            fullContent += chunk;
+            tokenCount++;
           }
-        } catch {
-          // stream ended
-        }
+        } catch {}
       } else {
         const text = await upstream.text();
         res.write(text);
+        fullContent = text;
       }
 
-      providerService.recordSuccess(`custom:${customProvider.name}`);
       res.write("data: [DONE]\n\n");
       res.end();
+      await recordCompletion(`custom:${customProvider.name}`, tokenCount, false, fullContent);
       return;
     } catch (err: any) {
       providerService.recordFailure(`custom:${customProvider.name}`);
@@ -71,6 +171,7 @@ export async function handleStreamChat(req: Request, res: Response) {
       res.write(`data: ${JSON.stringify(errorData)}\n\n`);
       res.write("data: [DONE]\n\n");
       res.end();
+      await recordCompletion(`custom:${customProvider.name}`, 0, true, "");
       return;
     }
   }
@@ -89,6 +190,7 @@ export async function handleStreamChat(req: Request, res: Response) {
     res.write(`data: ${JSON.stringify(errorData)}\n\n`);
     res.write("data: [DONE]\n\n");
     res.end();
+    await recordCompletion(providerName, 0, true, "");
     return;
   }
 
@@ -122,14 +224,8 @@ export async function handleStreamChat(req: Request, res: Response) {
           const data = line.slice(6).trim();
           if (data === "[DONE]") {
             res.write("data: [DONE]\n\n");
-            providerService.recordSuccess(providerName);
-            errorLogger.info("stream_handler", "Chat completion served", {
-              model,
-              taskType,
-              provider: providerName,
-              tokens: tokenCount,
-            });
             res.end();
+            recordCompletion(providerName, tokenCount, false, fullContent);
             return;
           }
           try {
@@ -154,6 +250,7 @@ export async function handleStreamChat(req: Request, res: Response) {
       res.write(`data: ${JSON.stringify(errorData)}\n\n`);
       res.write("data: [DONE]\n\n");
       res.end();
+      recordCompletion(providerName, tokenCount, true, fullContent);
     });
   } catch (error: any) {
     providerService.recordFailure(providerName);
@@ -164,5 +261,6 @@ export async function handleStreamChat(req: Request, res: Response) {
     res.write(`data: ${JSON.stringify(errorData)}\n\n`);
     res.write("data: [DONE]\n\n");
     res.end();
+    await recordCompletion(providerName, 0, true, "");
   }
 }

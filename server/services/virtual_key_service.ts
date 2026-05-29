@@ -7,6 +7,7 @@ import { virtualKeys } from "../../drizzle/schema";
 const KEY_PREFIX = "sk-";
 const KEY_LENGTH = 48;
 const BCRYPT_ROUNDS = 12;
+const MICRO_USD = 1_000_000;
 
 interface CreateKeyInput {
   name: string;
@@ -42,6 +43,20 @@ interface KeyCreationResult {
   key: string;
   keyPrefix: string;
   name: string;
+}
+
+// In-memory rate limit tracker (replace with Redis in production)
+const rateLimitStore = new Map<string, { timestamps: number[] }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  if (maxRequests <= 0) return true;
+  const now = Date.now();
+  const entry = rateLimitStore.get(key) || { timestamps: [] };
+  entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);
+  if (entry.timestamps.length >= maxRequests) return false;
+  entry.timestamps.push(now);
+  rateLimitStore.set(key, entry);
+  return true;
 }
 
 export class VirtualKeyService {
@@ -180,7 +195,10 @@ export class VirtualKeyService {
       .where(eq(virtualKeys.id, id));
   }
 
-  async validateKey(key: string): Promise<{
+  async validateKey(
+    key: string,
+    options?: { model?: string }
+  ): Promise<{
     valid: boolean;
     keyRecord?: VirtualKeyRecord;
     error?: string;
@@ -207,8 +225,28 @@ export class VirtualKeyService {
           return { valid: false, error: "Key expired" };
         }
 
-        if (keyRecord.budgetLimitUsd > 0 && keyRecord.spendUsd >= keyRecord.budgetLimitUsd) {
+        // Fix: spendUsd is stored in micro-USD, budgetLimitUsd is in dollars
+        if (keyRecord.budgetLimitUsd > 0 && keyRecord.spendUsd / MICRO_USD >= keyRecord.budgetLimitUsd) {
           return { valid: false, error: "Budget limit exceeded" };
+        }
+
+        // Enforce rate limits (TPM / RPM)
+        const keyId = `vk:${keyRecord.id}`;
+        if (keyRecord.rateLimitTPM > 0 && !checkRateLimit(`${keyId}:tpm`, keyRecord.rateLimitTPM, 60_000)) {
+          return { valid: false, error: `TPM rate limit exceeded (max ${keyRecord.rateLimitTPM}/min)` };
+        }
+        if (keyRecord.rateLimitRPM > 0 && !checkRateLimit(`${keyId}:rpm`, keyRecord.rateLimitRPM, 60_000)) {
+          return { valid: false, error: `RPM rate limit exceeded (max ${keyRecord.rateLimitRPM}/min)` };
+        }
+
+        // Model access restriction
+        if (options?.model && keyRecord.models && keyRecord.models.length > 0) {
+          const allowed = keyRecord.models.some(
+            (m) => options.model!.toLowerCase() === m.toLowerCase()
+          );
+          if (!allowed) {
+            return { valid: false, error: `Model "${options.model}" not allowed by this key` };
+          }
         }
 
         return { valid: true, keyRecord };

@@ -330,7 +330,7 @@ docker compose restart app
 
 4. **If data corruption, rebuild**:
 ```bash
-docker volume rm freeapi-forge_postgres-data
+docker volume rm forge-studio_postgres-data
 docker compose up -d postgres
 ./scripts/restore.sh ./backups/postgres_latest.sql.gz
 ```
@@ -350,7 +350,7 @@ docker compose restart redis
 
 3. **If restart fails, clear and rebuild**:
 ```bash
-docker volume rm freeapi-forge_redis-data
+docker volume rm forge-studio_redis-data
 docker compose up -d redis
 # Sessions will be lost, users need to re-login
 ```

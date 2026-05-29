@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import helmet from "helmet";
+import cors from "cors";
 import { createServer } from "http";
 import net from "net";
 import { WebSocketServer } from "ws";
@@ -44,6 +46,15 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  app.use(helmet());
+  app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(",") ?? [] }));
+
+  // Validate required env vars on startup
+  if (!process.env.JWT_SECRET) {
+    console.error("[FATAL] JWT_SECRET environment variable must be set");
+    process.exit(1);
+  }
+
   // Global error handler
   app.use(
     (
@@ -62,16 +73,18 @@ async function startServer() {
     }
   );
 
-  // Mock auth
-  app.get("/auth/mock", (req, res) => {
-    res.cookie("session", "mock-session-token", {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      path: "/",
+  // Mock auth (DEV only)
+  if (process.env.NODE_ENV !== "production") {
+    app.get("/auth/mock", (req, res) => {
+      res.cookie("session", "mock-session-token", {
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+      const returnPath = (req.query.returnPath as string) || "/";
+      res.redirect(returnPath);
     });
-    const returnPath = (req.query.returnPath as string) || "/";
-    res.redirect(returnPath);
-  });
+  }
 
   // Health check endpoint (standalone, not tRPC)
   app.get("/health", async (_req, res) => {
@@ -192,14 +205,14 @@ async function startServer() {
         }
       }
 
-      // Fall back to LiteLLM
+      // Fall back to LiteLLM (via tRPC)
       const response = await fetch(
         `http://localhost:${port}/api/trpc/chat.complete`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Cookie: "session=mock-session-token",
+            "x-api-key": process.env.BUILT_IN_FORGE_API_KEY || "local-dev-key",
           },
           body: JSON.stringify({ json: { messages, taskType } }),
         }
