@@ -46,6 +46,10 @@ import { settingsRouter } from "./routers/settings_router";
 import { usageRouter } from "./routers/usage_router";
 import { customProviderRouter } from "./routers/custom_provider_router";
 import { huggingfaceRouter } from "./routers/huggingface_router";
+import { promptRouter } from "./routers/prompt_router";
+import { benchmarkRouter } from "./routers/benchmark_router";
+import { providerHealthRouter } from "./routers/provider_health_router";
+import { webhookRouter } from "./routers/webhook_router";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -523,6 +527,18 @@ export const appRouter = router({
 
   // HuggingFace Model Hub
   huggingface: huggingfaceRouter,
+
+  // Prompt Library
+  prompts: promptRouter,
+
+  // Model Benchmarking
+  benchmark: benchmarkRouter,
+
+  // Provider Health
+  providerHealth: providerHealthRouter,
+
+  // Webhooks
+  webhooks: webhookRouter,
 });
 
 export type AppRouter = typeof appRouter;

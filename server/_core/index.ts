@@ -3,6 +3,8 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { WebSocketServer } from "ws";
+import Redis from "ioredis";
+import { sql } from "drizzle-orm";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -13,6 +15,8 @@ import { mcpRouter } from "../services/mcp_server";
 import { errorLogger } from "../services/error_logger";
 import { customProviderService } from "../services/custom_provider";
 import { directProxyChat } from "../services/direct_proxy";
+import { getDb } from "../db";
+import { providerService } from "../services/provider_service";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -67,6 +71,60 @@ async function startServer() {
     });
     const returnPath = (req.query.returnPath as string) || "/";
     res.redirect(returnPath);
+  });
+
+  // Health check endpoint (standalone, not tRPC)
+  app.get("/health", async (_req, res) => {
+    const checks: Record<string, { status: string; latencyMs?: number }> = {};
+    let overallStatus = "healthy";
+
+    // Check PostgreSQL
+    try {
+      const start = Date.now();
+      const db = await getDb();
+      if (db) {
+        await db.execute(sql`SELECT 1`);
+        checks.postgres = { status: "up", latencyMs: Date.now() - start };
+      } else {
+        checks.postgres = { status: "down" };
+        overallStatus = "degraded";
+      }
+    } catch {
+      checks.postgres = { status: "down" };
+      overallStatus = "unhealthy";
+    }
+
+    // Check Redis
+    try {
+      const start = Date.now();
+      const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379/1", { connectTimeout: 3000, lazyConnect: true });
+      await redis.connect();
+      await redis.ping();
+      await redis.quit();
+      checks.redis = { status: "up", latencyMs: Date.now() - start };
+    } catch {
+      checks.redis = { status: "down" };
+      overallStatus = overallStatus === "unhealthy" ? "unhealthy" : "degraded";
+    }
+
+    // Check LiteLLM (optional)
+    if (process.env.LITELLM_URL) {
+      try {
+        const start = Date.now();
+        const resp = await fetch(process.env.LITELLM_URL, { signal: AbortSignal.timeout(3000) });
+        checks.litellm = { status: resp.ok ? "up" : "degraded", latencyMs: Date.now() - start };
+      } catch {
+        checks.litellm = { status: "down" };
+      }
+    }
+
+    const statusCode = overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 200 : 503;
+    res.status(statusCode).json({
+      status: overallStatus,
+      version: "3.0.0",
+      uptime: process.uptime(),
+      checks,
+    });
   });
 
   // Stream chat endpoint
@@ -307,6 +365,36 @@ async function startServer() {
     console.log(`  API Docs:  http://localhost:${port}/api-docs`);
     console.log(`  MCP SSE:   http://localhost:${port}/mcp/sse`);
   });
+
+  const shutdown = async (signal: string) => {
+    console.log(`\n[Shutdown] ${signal} received, shutting down gracefully...`);
+
+    // 1. Stop accepting new connections
+    server.close(() => {
+      console.log("[Shutdown] HTTP server closed");
+    });
+
+    // 2. Close WebSocket connections
+    wss.clients.forEach(client => client.close(1001, "Server shutting down"));
+    wss.close();
+
+    // 3. Close Redis
+    try {
+      await providerService.closeRedis();
+      console.log("[Shutdown] Redis closed");
+    } catch {}
+
+    // 4. Force exit after 10s
+    setTimeout(() => {
+      console.error("[Shutdown] Forced exit after timeout");
+      process.exit(1);
+    }, 10000);
+
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 startServer().catch((err) => {

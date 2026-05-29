@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -24,6 +24,7 @@ import {
   Edit2,
   Check,
   X,
+  BarChart3,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -48,6 +49,20 @@ export default function Budgets() {
   const overBudget = budgets.filter(
     (b) => b.currentSpendUsd > b.monthlyLimitUsd,
   ).length;
+
+  const forecast = useMemo(() => {
+    if (budgets.length < 3) return { projected: 0, avgDaily: 0, confidence: "low" as const };
+    const dailyData = budgets.map((b, i) => ({
+      date: `day-${i}`,
+      spend: b.currentSpendUsd,
+    }));
+    const avg = dailyData.reduce((s, d) => s + d.spend, 0) / dailyData.length;
+    return {
+      projected: avg * 30,
+      avgDaily: avg,
+      confidence: dailyData.length >= 14 ? "high" as const : dailyData.length >= 7 ? "medium" as const : "low" as const,
+    };
+  }, [budgets]);
 
   const handleUpdateLimit = (teamId: number) => {
     const limit = parseFloat(newLimit);
@@ -123,6 +138,46 @@ export default function Budgets() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur mb-8">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-purple-400" />
+                <span className="text-sm text-slate-400">Monthly Spend Forecast</span>
+              </div>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                forecast.confidence === "high"
+                  ? "bg-green-600/20 text-green-400"
+                  : forecast.confidence === "medium"
+                  ? "bg-yellow-600/20 text-yellow-400"
+                  : "bg-red-600/20 text-red-400"
+              }`}>
+                {forecast.confidence} confidence
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Projected Spend</div>
+                <div className="text-2xl font-bold text-white">
+                  ${forecast.projected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Avg Daily</div>
+                <div className="text-2xl font-bold text-white">
+                  ${forecast.avgDaily.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 mb-1">Based on</div>
+                <div className="text-2xl font-bold text-white">
+                  {budgets.length} data points
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur">
           <CardHeader className="border-b border-slate-700/50">

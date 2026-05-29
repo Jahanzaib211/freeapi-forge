@@ -38,6 +38,10 @@ import LLMDiscoverer from "./pages/LLMDiscoverer";
 import ForgeBuilder from "./pages/ForgeBuilder";
 import CustomProviders from "./pages/CustomProviders";
 import HuggingFace from "./pages/HuggingFace";
+import PromptLibrary from "./pages/PromptLibrary";
+import Benchmark from "./pages/Benchmark";
+import ProviderHealth from "./pages/ProviderHealth";
+import Webhooks from "./pages/Webhooks";
 
 function Router() {
   return (
@@ -75,6 +79,10 @@ function Router() {
       <Route path="/builder" component={() => <DashboardLayout><ForgeBuilder /></DashboardLayout>} />
       <Route path="/custom-providers" component={() => <DashboardLayout><CustomProviders /></DashboardLayout>} />
       <Route path="/huggingface" component={() => <DashboardLayout><HuggingFace /></DashboardLayout>} />
+      <Route path="/prompts" component={() => <DashboardLayout><PromptLibrary /></DashboardLayout>} />
+      <Route path="/benchmark" component={() => <DashboardLayout><Benchmark /></DashboardLayout>} />
+      <Route path="/provider-health" component={() => <DashboardLayout><ProviderHealth /></DashboardLayout>} />
+      <Route path="/webhooks" component={() => <DashboardLayout><Webhooks /></DashboardLayout>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

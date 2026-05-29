@@ -54,6 +54,10 @@ import {
   Wrench,
   Zap,
   Boxes,
+  FileCode,
+  GitCompare,
+  HeartPulse,
+  Webhook,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -86,6 +90,10 @@ const sidebarSections: Section[] = [
       { icon: FileText, label: "Policies", path: "/guardrails" },
       { icon: Wrench, label: "Tools", path: "/tools-hub" },
       { icon: Plug, label: "Custom Providers", path: "/custom-providers" },
+      { icon: FileCode, label: "Prompt Library", path: "/prompts" },
+      { icon: GitCompare, label: "Model Benchmark", path: "/benchmark" },
+      { icon: HeartPulse, label: "Provider Health", path: "/provider-health" },
+      { icon: Webhook, label: "Webhooks", path: "/webhooks" },
     ],
   },
   {

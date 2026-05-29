@@ -9,7 +9,11 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = postgres(process.env.DATABASE_URL);
+      const client = postgres(process.env.DATABASE_URL, {
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+      });
       _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
@@ -307,4 +311,12 @@ export async function createAuditLog(userId: number | null, teamId: number | nul
     action,
     details,
   });
+}
+
+export async function closeDb() {
+  try {
+    if (_db) {
+      _db = null;
+    }
+  } catch {}
 }

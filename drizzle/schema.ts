@@ -267,3 +267,46 @@ export const customProviders = pgTable("customProviders", {
 
 export type CustomProvider = typeof customProviders.$inferSelect;
 export type InsertCustomProvider = typeof customProviders.$inferInsert;
+
+// Prompt Library
+export const promptLibrary = pgTable("promptLibrary", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  category: varchar("category", { length: 64 }).default("general").notNull(),
+  tags: text("tags").array(),
+  version: integer("version").default(1).notNull(),
+  forkedFrom: integer("forkedFrom"),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type PromptLibrary = typeof promptLibrary.$inferSelect;
+export type InsertPromptLibrary = typeof promptLibrary.$inferInsert;
+
+// Webhooks
+export const webhooks = pgTable("webhooks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
+  url: varchar("url", { length: 1024 }).notNull(),
+  secret: varchar("secret", { length: 255 }),
+  events: text("events").array(),
+  enabled: integer("enabled").default(1).notNull(),
+  lastTriggered: timestamp("lastTriggered"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Webhook = typeof webhooks.$inferSelect;
+export type InsertWebhook = typeof webhooks.$inferInsert;
+
+export const cacheEntries = pgTable("cacheEntries", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  response: text("response").notNull(),
+  model: varchar("model", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+});
+
+export type CacheEntry = typeof cacheEntries.$inferSelect;
