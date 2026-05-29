@@ -52,6 +52,7 @@ import { benchmarkRouter } from "./routers/benchmark_router";
 import { providerHealthRouter } from "./routers/provider_health_router";
 import { webhookRouter } from "./routers/webhook_router";
 import { catalogRouter } from "./routers/catalog_router";
+import { auditRouter } from "./routers/audit_router";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -554,6 +555,9 @@ export const appRouter = router({
 
   // Unified Catalog (AI Lab Hub)
   catalog: catalogRouter,
+
+  // Audit Logs
+  audit: auditRouter,
 });
 
 export type AppRouter = typeof appRouter;

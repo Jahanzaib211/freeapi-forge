@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, desc, like } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { guardrails, policies } from "../../drizzle/schema";
+import { guardrails, policies, systemEvents } from "../../drizzle/schema";
 import { guardrailService } from "../services/guardrail_service";
 
 export const guardrailRouter = router({
@@ -78,6 +78,39 @@ export const guardrailRouter = router({
       .mutation(async ({ input }) => {
         const success = await guardrailService.deleteGuardrail(input.id);
         return { success };
+      }),
+
+    monitorEvents: protectedProcedure
+      .input(z.object({ limit: z.number().default(50) }).optional())
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { events: [], totalChecks: 0, blocks: 0, passRate: 100 };
+
+        const limit = input?.limit || 50;
+        const result = await db
+          .select()
+          .from(systemEvents)
+          .where(like(systemEvents.source, "%guardrail%"))
+          .orderBy(desc(systemEvents.createdAt))
+          .limit(limit);
+
+        const blocks = result.filter((e) => e.level === "error").length;
+        const warnings = result.filter((e) => e.level === "warn").length;
+        const total = result.length;
+
+        return {
+          events: result.map((e) => ({
+            id: e.id,
+            level: e.level,
+            source: e.source,
+            message: e.message,
+            createdAt: e.createdAt,
+          })),
+          totalChecks: total,
+          blocks,
+          warnings,
+          passRate: total > 0 ? Math.round(((total - blocks) / total) * 100) : 100,
+        };
       }),
   },
 

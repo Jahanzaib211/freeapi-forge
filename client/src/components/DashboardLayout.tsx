@@ -115,6 +115,12 @@ const sidebarSections: Section[] = [
   {
     title: "SECURITY",
     items: [
+      { icon: Shield, label: "Guardrails Monitor", path: "/guardrails-monitor" },
+      { icon: AlertCircle, label: "Error Logs", path: "/error-logs" },
+      { icon: ScrollText, label: "Audit Logs", path: "/audit-logs" },
+      { icon: Lock, label: "Access Groups", path: "/access-groups" },
+      { icon: User, label: "Internal Users", path: "/internal-users" },
+      { icon: Building2, label: "Organizations", path: "/organizations" },
       { icon: Users, label: "Teams & Budgets", path: "/teams" },
     ],
   },

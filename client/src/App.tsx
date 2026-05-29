@@ -43,6 +43,7 @@ import Benchmark from "./pages/Benchmark";
 import ProviderHealth from "./pages/ProviderHealth";
 import Webhooks from "./pages/Webhooks";
 import AILabHub from "./pages/AILabHub";
+import AuditLogs from "./pages/AuditLogs";
 
 function Router() {
   return (
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/benchmark" component={() => <DashboardLayout><Benchmark /></DashboardLayout>} />
       <Route path="/provider-health" component={() => <DashboardLayout><ProviderHealth /></DashboardLayout>} />
       <Route path="/webhooks" component={() => <DashboardLayout><Webhooks /></DashboardLayout>} />
+      <Route path="/audit-logs" component={() => <DashboardLayout><AuditLogs /></DashboardLayout>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
