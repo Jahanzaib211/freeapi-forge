@@ -253,11 +253,14 @@ function CollapsibleSection({
     <div className="mb-1">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-slate-400 transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500 hover:text-slate-300 transition-colors group"
       >
-        <span>{section.title}</span>
+        <span className="flex items-center gap-2">
+          <span className="w-1 h-1 rounded-full bg-blue-500/40 group-hover:bg-blue-400/70 transition-colors" />
+          {section.title}
+        </span>
         <svg
-          className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
+          className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

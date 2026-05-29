@@ -192,9 +192,9 @@ export default function AILabHub() {
               key={pool}
               onClick={() => setPoolFilter(poolFilter === pool ? "all" : pool)}
               className={cn(
-                "rounded-xl p-4 border transition-all text-left",
+                "rounded-xl p-4 border transition-all text-left card-lift",
                 poolColors[pool],
-                poolFilter === pool ? "ring-2 ring-white/20 scale-[1.02]" : "opacity-70 hover:opacity-100"
+                poolFilter === pool ? "ring-2 ring-white/20 scale-[1.02] shadow-lg" : "opacity-75 hover:opacity-100"
               )}
             >
               <div className="flex items-center justify-between">
@@ -314,7 +314,7 @@ export default function AILabHub() {
                   return (
                     <Card
                       key={m.id}
-                      className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-all group"
+                      className="bg-slate-900/50 border-slate-800 hover:border-slate-600 card-lift glow-hover group"
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">

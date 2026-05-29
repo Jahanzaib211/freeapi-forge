@@ -31,24 +31,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="max-w-[1200px] mx-auto p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div />
-          <div className="flex items-center gap-3">
-            {toggleTheme && (
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-slate-800/50 transition-colors text-slate-400 hover:text-white"
-                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              >
-                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Hero */}
-        <div className="mb-10 text-center">
+      <div className="max-w-[1200px] mx-auto p-6">\n        {/* Hero */}
+        <div className="mb-10 text-center page-enter">
           <div className="flex items-center justify-center gap-4 mb-6">
             <img
               src="https://avatars.githubusercontent.com/u/695416?v=4"
