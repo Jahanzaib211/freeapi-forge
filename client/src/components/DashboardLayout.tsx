@@ -96,6 +96,7 @@ const sidebarSections: Section[] = [
   {
     title: "AI GATEWAY",
     items: [
+      { icon: Zap, label: "Workflows", path: "/workflows" },
       { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
       { icon: Cable, label: "MCP Explorer", path: "/mcp-explorer" },

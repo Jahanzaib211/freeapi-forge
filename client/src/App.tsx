@@ -12,6 +12,8 @@ import AgentBuilder from "@/pages/AgentBuilder";
 import AgentActivity from "@/pages/AgentActivity";
 import McpExplorer from "@/pages/McpExplorer";
 import MyMcps from "@/pages/MyMcps";
+import WorkflowEditor from "@/pages/WorkflowEditor";
+import WorkflowMonitor from "@/pages/WorkflowMonitor";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -88,6 +90,9 @@ function Router() {
       <Route path="/mcp-explorer" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
       <Route path="/my-mcps" component={() => <ProtectedRoute><DashboardLayout><MyMcps /></DashboardLayout></ProtectedRoute>} />
       <Route path="/mcp/:slug" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/workflows" component={() => <ProtectedRoute><DashboardLayout><WorkflowEditor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/workflows/:id" component={() => <ProtectedRoute><DashboardLayout><WorkflowEditor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/workflow-monitor" component={() => <ProtectedRoute><DashboardLayout><WorkflowMonitor /></DashboardLayout></ProtectedRoute>} />
       <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />

@@ -640,3 +640,106 @@ export const tenantSubscriptions = pgTable("tenantSubscriptions", {
 
 export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
 export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;
+
+// ─── WORKFLOWS ────────────────────────────────────────────────────────────────
+export const workflowStatusEnum = pgEnum("workflowStatus", ["draft", "active", "paused", "archived"]);
+export const workflowTriggerEnum = pgEnum("workflowTrigger", ["manual", "cron", "webhook", "event", "chat_command", "agent_completion"]);
+
+export const workflows = pgTable("workflows", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  version: integer("version").default(1).notNull(),
+  status: workflowStatusEnum("status").default("draft").notNull(),
+  triggerType: workflowTriggerEnum("triggerType").default("manual").notNull(),
+  triggerConfig: text("triggerConfig"),
+  graph: text("graph"),
+  settings: text("settings"),
+  lastRunAt: timestamp("lastRunAt"),
+  nextRunAt: timestamp("nextRunAt"),
+  totalRuns: integer("totalRuns").default(0).notNull(),
+  successCount: integer("successCount").default(0).notNull(),
+  errorCount: integer("errorCount").default(0).notNull(),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Workflow = typeof workflows.$inferSelect;
+export type InsertWorkflow = typeof workflows.$inferInsert;
+
+// ─── WORKFLOW VERSIONS ────────────────────────────────────────────────────────
+export const workflowVersions = pgTable("workflowVersions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  workflowId: integer("workflowId").notNull(),
+  version: integer("version").notNull(),
+  graph: text("graph"),
+  changelog: text("changelog"),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorkflowVersion = typeof workflowVersions.$inferSelect;
+export type InsertWorkflowVersion = typeof workflowVersions.$inferInsert;
+
+// ─── WORKFLOW RUNS ────────────────────────────────────────────────────────────
+export const workflowRuns = pgTable("workflowRuns", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  workflowId: integer("workflowId").notNull(),
+  tenantId: integer("tenantId").notNull(),
+  version: integer("version").default(1).notNull(),
+  triggerType: varchar("triggerType", { length: 32 }).notNull(),
+  triggerData: text("triggerData"),
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  currentNodeId: varchar("currentNodeId", { length: 64 }),
+  totalNodes: integer("totalNodes").default(0).notNull(),
+  completedNodes: integer("completedNodes").default(0).notNull(),
+  input: text("input"),
+  output: text("output"),
+  error: text("error"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  durationMs: integer("durationMs").default(0).notNull(),
+  costUsd: integer("costUsd").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorkflowRun = typeof workflowRuns.$inferSelect;
+export type InsertWorkflowRun = typeof workflowRuns.$inferInsert;
+
+// ─── WORKFLOW NODE RUNS ───────────────────────────────────────────────────────
+export const workflowNodeRuns = pgTable("workflowNodeRuns", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  workflowRunId: integer("workflowRunId").notNull(),
+  nodeId: varchar("nodeId", { length: 64 }).notNull(),
+  nodeType: varchar("nodeType", { length: 32 }).notNull(),
+  nodeName: varchar("nodeName", { length: 255 }),
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  input: text("input"),
+  output: text("output"),
+  error: text("error"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  durationMs: integer("durationMs").default(0).notNull(),
+  retryCount: integer("retryCount").default(0).notNull(),
+  metadata: text("metadata"),
+});
+
+export type WorkflowNodeRun = typeof workflowNodeRuns.$inferSelect;
+export type InsertWorkflowNodeRun = typeof workflowNodeRuns.$inferInsert;
+
+// ─── WORKFLOW WEBHOOKS ────────────────────────────────────────────────────────
+export const workflowWebhooks = pgTable("workflowWebhooks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  workflowId: integer("workflowId").notNull(),
+  tenantId: integer("tenantId").notNull(),
+  path: varchar("path", { length: 255 }).notNull().unique(),
+  secret: varchar("secret", { length: 255 }),
+  lastReceivedAt: timestamp("lastReceivedAt"),
+  requestCount: integer("requestCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorkflowWebhook = typeof workflowWebhooks.$inferSelect;
+export type InsertWorkflowWebhook = typeof workflowWebhooks.$inferInsert;

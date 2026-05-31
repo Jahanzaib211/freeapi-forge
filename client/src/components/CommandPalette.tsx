@@ -7,6 +7,8 @@ const PAGES = [
   { name: "Chat", path: "/chat", icon: "💬", category: "Pages" },
   { name: "Playground", path: "/dashboard", icon: "🎮", category: "Pages" },
   { name: "Agents Builder", path: "/agents", icon: "🤖", category: "Pages" },
+  { name: "Workflows", path: "/workflows", icon: "⚡", category: "Pages" },
+  { name: "Workflow Monitor", path: "/workflow-monitor", icon: "📊", category: "Pages" },
   { name: "MCP Explorer", path: "/mcp-explorer", icon: "🔌", category: "Pages" },
   { name: "My MCPs", path: "/my-mcps", icon: "📦", category: "Pages" },
   { name: "Skills", path: "/skills", icon: "🧠", category: "Pages" },
@@ -17,6 +19,8 @@ const PAGES = [
   { name: "Audit Logs", path: "/audit-logs", icon: "📋", category: "Pages" },
   { name: "System Monitor", path: "/system-monitor", icon: "📊", category: "Pages" },
   { name: "Admin Panel", path: "/admin", icon: "🛡️", category: "Pages" },
+  { name: "New Workflow", path: "/workflows", icon: "⚡", category: "Actions" },
+  { name: "View Workflow Runs", path: "/workflow-monitor", icon: "📊", category: "Actions" },
 ];
 
 export default function CommandPalette() {

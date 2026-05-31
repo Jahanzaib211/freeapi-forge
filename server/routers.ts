@@ -62,6 +62,7 @@ import { ragRouter } from "./routers/rag";
 import { discordRouter } from "./routers/discord";
 import { agentRouter as agentBuilderRouter } from "./routers/agents";
 import { mcpExplorerRouter } from "./routers/mcp-explorer";
+import { workflowRouter } from "./routers/workflows";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -471,6 +472,9 @@ export const appRouter = router({
 
   // MCP Explorer
   mcpExplorer: mcpExplorerRouter,
+
+  // Agentic Workflows
+  workflowRouter: workflowRouter,
 });
 
 export type AppRouter = typeof appRouter;
