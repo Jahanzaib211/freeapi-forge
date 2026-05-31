@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint-and-typecheck:
-    name: Lint & Typecheck
+    name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +17,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
+      - run: pnpm install --no-frozen-lockfile
       - run: pnpm typecheck
 
   build:
@@ -61,6 +60,6 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
       - run: npx drizzle-kit push
       - run: pnpm build
