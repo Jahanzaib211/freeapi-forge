@@ -7,16 +7,8 @@ import { errorLogger } from "./error_logger";
 import { guardrailService } from "./guardrail_service";
 import { virtualKeyService } from "./virtual_key_service";
 import { createRequestHistory, createAuditLog, updateBudgetSpend, getOrCreateBudgetLimit, getAllProviders } from "../db";
+import { getModelForTask } from "../_core/model-registry";
 import type { TenantRequest } from "../middleware/tenant-resolver";
-
-const TASK_TYPE_MODEL_MAP: Record<string, string> = {
-  chat: "fast-70b",
-  coding: "coder",
-  vision: "gemini-flash",
-  fast: "fast-8b",
-  long_context: "smart",
-  local: "qwen-moe",
-};
 
 async function resolveTeamIdFromRequest(req: Request): Promise<number> {
   try {
@@ -39,7 +31,7 @@ function resolveTenantIdFromRequest(req: Request): number {
 export async function handleStreamChat(req: Request, res: Response) {
   const { messages, taskType, maxTokens, temperature, model: directModel } = req.body;
 
-  const model = directModel || TASK_TYPE_MODEL_MAP[taskType || "chat"] || "fast-70b";
+  const model = directModel || await getModelForTask(taskType || "chat");
   const requestId = `stream_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const startTime = Date.now();
 

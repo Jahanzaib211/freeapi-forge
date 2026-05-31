@@ -2,6 +2,7 @@ import axios from "axios";
 import { providerService } from "./provider_service";
 import { errorLogger } from "./error_logger";
 import { localModelManager } from "./local_model_manager";
+import { getModelForTask } from "../_core/model-registry";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -38,15 +39,6 @@ interface ChatCompletionResponse {
   };
 }
 
-const TASK_TYPE_MODEL_MAP: Record<string, string> = {
-  chat: "mistral/codestral-latest",
-  coding: "mistral/codestral-latest",
-  vision: "gemini-flash",
-  fast: "fast-8b",
-  long_context: "smart",
-  local: "__LOCAL__",
-};
-
 export class LLMRouter {
   private litellmUrl: string;
   private litellmApiKey: string;
@@ -58,7 +50,7 @@ export class LLMRouter {
 
   async complete(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     const taskType = request.taskType || "chat";
-    const model = TASK_TYPE_MODEL_MAP[taskType] || "fast-70b";
+    const model = await getModelForTask(taskType);
 
     if (model === "__LOCAL__") {
       return this.routeToLocal(request);

@@ -15,8 +15,35 @@ export default function ChatPage() {
   const [showTools, setShowTools] = useState(false);
   const [hasProviders, setHasProviders] = useState(true);
   const [providersLoading, setProvidersLoading] = useState(true);
+  const [availableModels, setAvailableModels] = useState<Array<{ id: string; name: string }>>([]);
 
-  useEffect(() => { loadConversations(); loadMcpTools(); checkProviders(); }, []);
+  useEffect(() => { loadConversations(); loadMcpTools(); checkProviders(); loadModels(); }, []);
+
+  async function loadModels() {
+    try {
+      const res = await fetch("/api/trpc/aiLab.getConnectedProviders", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        const providers = d.result?.data?.json || [];
+        const models: Array<{ id: string; name: string }> = [];
+        for (const p of providers) {
+          const modelIds = p.enabledModelIds ? JSON.parse(p.enabledModelIds) : [];
+          for (const m of modelIds) {
+            if (typeof m === "string") models.push({ id: m, name: m });
+          }
+        }
+        if (models.length === 0) {
+          models.push({ id: "fast-8b", name: "Default" });
+        }
+        setAvailableModels(models);
+        if (!models.find(m => m.id === selectedModel)) {
+          setSelectedModel(models[0]?.id || "fast-8b");
+        }
+      }
+    } catch {}
+  }
 
   async function checkProviders() {
     setProvidersLoading(true);
@@ -139,9 +166,9 @@ export default function ChatPage() {
             <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
               <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
                 className="px-3 py-1.5 bg-muted border border-border rounded-lg text-sm text-foreground">
-                <option value="fast-8b">Fast 8B</option><option value="chat">Chat</option>
-                <option value="coding">Coding</option><option value="fast">Fast</option>
-                <option value="local">Local</option>
+                {availableModels.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
               </select>
               <div className="relative">
                 <button onClick={() => setShowTools(!showTools)}

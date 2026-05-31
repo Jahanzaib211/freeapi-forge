@@ -5,6 +5,7 @@ import { llmRouter } from "../services/llm_router";
 import { directProxyChat } from "../services/direct_proxy";
 import { customProviderService } from "../services/custom_provider";
 import { budgetService } from "../services/budget-service";
+import { getModelForTask } from "../_core/model-registry";
 import { getDb, getOrCreateBudgetLimit, createRequestHistory, updateBudgetSpend, createAuditLog, getAllProviders } from "../db";
 
 export const chatRouter = router({
@@ -29,11 +30,7 @@ export const chatRouter = router({
       const isBlocked = await budgetService.isBlocked(tenantId, monthYear);
       if (isBlocked) throw new Error("Budget limit exceeded");
 
-      const taskModelMap: Record<string, string> = {
-        chat: "fast-70b", coding: "coder", vision: "gemini-flash",
-        fast: "fast-8b", long_context: "smart", local: "qwen-moe",
-      };
-      const candidateModel = taskModelMap[input.taskType || "chat"] || "fast-70b";
+      const candidateModel = await getModelForTask(input.taskType || "chat", tenantId);
 
       let response;
       const customProvider = await customProviderService.findProviderForModel(candidateModel);
