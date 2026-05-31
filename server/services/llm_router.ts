@@ -14,6 +14,7 @@ interface ChatCompletionRequest {
   maxTokens?: number;
   temperature?: number;
   teamId?: string;
+  tenantId?: number;
 }
 
 interface ChatCompletionResponse {

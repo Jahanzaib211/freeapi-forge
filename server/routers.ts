@@ -59,9 +59,9 @@ import { provisioningRouter } from "./routers/provisioning";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
-async function resolveTeamId(ctx: { user?: { id?: number } | null }): Promise<number> {
+async function resolveTeamId(ctx: { user?: { id?: number } | null; tenantId?: number }): Promise<number> {
   if (ctx.user?.id) {
-    const teams = await getTeamsByOwnerId(ctx.user.id);
+    const teams = await getTeamsByOwnerId(ctx.user.id, ctx.tenantId);
     if (teams.length > 0) return teams[0].id;
   }
   return 1;
@@ -99,8 +99,9 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         const teamId = await resolveTeamId(ctx);
+        const tenantId = ctx.tenantId || 1;
         const monthYear = new Date().toISOString().slice(0, 7);
-        const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10);
+        const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10, tenantId);
         
         if (budget) {
           const currentSpendUsd = budget.currentSpendUsd / 1000000;
@@ -168,12 +169,12 @@ export const appRouter = router({
         const providerName = response.provider;
 
         if (isError) {
-          await providerService.recordFailure(providerName);
+          await providerService.recordFailure(providerName, tenantId);
         } else {
-          await providerService.recordSuccess(providerName);
+          await providerService.recordSuccess(providerName, tenantId);
         }
 
-        const allProviders = await getAllProviders();
+        const allProviders = await getAllProviders(tenantId);
         const providerRecord = allProviders.find(p => p.name === providerName);
         const providerId = providerRecord?.id || null;
 
@@ -185,10 +186,12 @@ export const appRouter = router({
           response.usage.prompt_tokens,
           response.usage.completion_tokens,
           costUsd,
-          isError ? "error" : "success"
+          isError ? "error" : "success",
+          undefined,
+          tenantId
         );
 
-        await updateBudgetSpend(teamId, monthYear, costUsd);
+        await updateBudgetSpend(teamId, monthYear, costUsd, tenantId);
 
         await createAuditLog(
           ctx.user?.id || null,
@@ -199,7 +202,8 @@ export const appRouter = router({
             tokens: response.usage?.total_tokens || 0,
             latencyMs: Date.now() - startTime,
             provider: response.provider || "unknown",
-          })
+          }),
+          tenantId
         );
 
         return response;
@@ -208,8 +212,8 @@ export const appRouter = router({
 
   // Provider management
   providers: router({
-    list: publicProcedure.query(async () => {
-      const providers = await getAllProviders();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const providers = await getAllProviders(ctx.tenantId);
       return providers.map((p) => ({
         id: p.id,
         name: p.name,
@@ -221,8 +225,8 @@ export const appRouter = router({
       }));
     }),
 
-    status: publicProcedure.query(async ({ ctx }) => {
-      const statuses = await providerService.getProviderStatus();
+    status: protectedProcedure.query(async ({ ctx }) => {
+      const statuses = await providerService.getProviderStatus(ctx.tenantId);
       return statuses.map((s) => ({
         id: s.id,
         name: s.provider,
@@ -239,12 +243,13 @@ export const appRouter = router({
 
   // Budget tracking
   budget: router({
-    getMonthlySpend: publicProcedure
+    getMonthlySpend: protectedProcedure
       .input(z.object({ teamId: z.string().default("default") }))
       .query(async ({ input, ctx }) => {
         const teamIdNum = await resolveTeamId(ctx);
+        const tenantId = ctx.tenantId || 1;
         const monthYear = new Date().toISOString().slice(0, 7);
-        const budget = await getOrCreateBudgetLimit(teamIdNum, monthYear, 10);
+        const budget = await getOrCreateBudgetLimit(teamIdNum, monthYear, 10, tenantId);
 
         return {
           teamId: input.teamId,
@@ -268,9 +273,10 @@ export const appRouter = router({
         }
 
         const teamIdNum = await resolveTeamId(ctx);
+        const tenantId = ctx.tenantId || 1;
         const monthYear = new Date().toISOString().slice(0, 7);
-        await updateBudgetLimit(teamIdNum, monthYear, input.newLimit);
-        await createAuditLog(ctx.user.id, teamIdNum, "UPDATE_BUDGET_LIMIT", `New limit: $${input.newLimit}`);
+        await updateBudgetLimit(teamIdNum, monthYear, input.newLimit, tenantId);
+        await createAuditLog(ctx.user.id, teamIdNum, "UPDATE_BUDGET_LIMIT", `New limit: $${input.newLimit}`, tenantId);
 
         return { success: true };
       }),
@@ -288,8 +294,9 @@ export const appRouter = router({
       )
       .query(async ({ input, ctx }) => {
         const teamIdNum = await resolveTeamId(ctx);
-        const history = await getRequestHistory(teamIdNum, input.limit, input.offset);
-        const total = await getRequestHistoryCount(teamIdNum);
+        const tenantId = ctx.tenantId || 1;
+        const history = await getRequestHistory(teamIdNum, input.limit, input.offset, tenantId);
+        const total = await getRequestHistoryCount(teamIdNum, tenantId);
 
         return {
           requests: history.map((r) => ({
@@ -347,7 +354,7 @@ export const appRouter = router({
         throw new Error("Unauthorized");
       }
 
-      const providers = await getAllProviders();
+      const providers = await getAllProviders(ctx.tenantId);
       return providers.map((p) => ({
         id: p.id,
         name: p.name,

@@ -23,6 +23,8 @@ export async function getDb() {
   return _db;
 }
 
+// ─── USER MANAGEMENT ─────────────────────────────────────────────────────────
+
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
     throw new Error("User openId is required for upsert");
@@ -91,66 +93,80 @@ export async function getUserByOpenId(openId: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
-// Team management
-export async function createTeam(name: string, ownerId: number, monthlyBudgetUsd: number = 10) {
+// ─── TEAM MANAGEMENT (tenant-scoped) ─────────────────────────────────────────
+
+export async function createTeam(name: string, ownerId: number, monthlyBudgetUsd: number = 10, tenantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const result = await db.insert(teams).values({
+
+  return await db.insert(teams).values({
     name,
     ownerId,
+    tenantId: tenantId ?? null,
     monthlyBudgetUsd,
   });
-  return result;
 }
 
-export async function getTeamsByOwnerId(ownerId: number) {
+export async function getTeamsByOwnerId(ownerId: number, tenantId?: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
+  if (tenantId) {
+    return await db.select().from(teams).where(and(eq(teams.ownerId, ownerId), eq(teams.tenantId, tenantId)));
+  }
   return await db.select().from(teams).where(eq(teams.ownerId, ownerId));
 }
 
-// API Key management
-export async function createApiKey(teamId: number, keyHash: string, name: string) {
+export async function getTeamsByTenantId(tenantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(teams).where(eq(teams.tenantId, tenantId));
+}
+
+// ─── API KEY MANAGEMENT (tenant-scoped) ──────────────────────────────────────
+
+export async function createApiKey(teamId: number, keyHash: string, name: string, tenantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   return await db.insert(apiKeys).values({
     teamId,
     keyHash,
     name,
+    tenantId: tenantId ?? null,
   });
 }
 
 export async function getApiKeyByHash(keyHash: string) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const result = await db.select().from(apiKeys)
     .where(and(eq(apiKeys.keyHash, keyHash), isNull(apiKeys.revokedAt)))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : null;
 }
 
-export async function getApiKeysByTeamId(teamId: number) {
+export async function getApiKeysByTeamId(teamId: number, tenantId?: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
+  const conditions = [eq(apiKeys.teamId, teamId), isNull(apiKeys.revokedAt)];
+  if (tenantId) conditions.push(eq(apiKeys.tenantId, tenantId));
+
   return await db.select().from(apiKeys)
-    .where(and(eq(apiKeys.teamId, teamId), isNull(apiKeys.revokedAt)))
+    .where(and(...conditions))
     .orderBy(desc(apiKeys.createdAt));
 }
 
 export async function updateApiKeyLastUsed(keyId: number) {
   const db = await getDb();
   if (!db) return;
-  
+
   await db.update(apiKeys)
     .set({ lastUsedAt: new Date() })
     .where(eq(apiKeys.id, keyId));
@@ -159,159 +175,196 @@ export async function updateApiKeyLastUsed(keyId: number) {
 export async function revokeApiKey(keyId: number) {
   const db = await getDb();
   if (!db) return;
-  
+
   await db.update(apiKeys)
     .set({ revokedAt: new Date() })
     .where(eq(apiKeys.id, keyId));
 }
 
-// Provider management
-export async function createProvider(name: string, litellmEndpoint: string, qualityScore: number = 50, latencyMs: number = 500, costPerMToken: number = 100) {
+// ─── PROVIDER MANAGEMENT (tenant-scoped) ─────────────────────────────────────
+
+export async function createProvider(name: string, litellmEndpoint: string, qualityScore: number = 50, latencyMs: number = 500, costPerMToken: number = 100, tenantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   return await db.insert(providers).values({
     name,
     litellmEndpoint,
     qualityScore,
     latencyMs,
     costPerMToken,
+    tenantId: tenantId ?? null,
   });
 }
 
-export async function getAllProviders() {
+export async function getAllProviders(tenantId?: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
+  // Tenant-scoped: return providers belonging to tenant OR global (NULL tenantId)
+  if (tenantId) {
+    return await db.select().from(providers)
+      .where(sql`(${providers.tenantId} = ${tenantId}) OR (${providers.tenantId} IS NULL)`)
+      .orderBy(providers.name);
+  }
   return await db.select().from(providers).orderBy(providers.name);
 }
 
-export async function getEnabledProviders() {
+export async function getEnabledProviders(tenantId?: number) {
   const db = await getDb();
   if (!db) return [];
-  
-  return await db.select().from(providers).where(eq(providers.enabled, 1));
+
+  const conditions = [eq(providers.enabled, 1)];
+  if (tenantId) {
+    conditions.push(sql`(${providers.tenantId} = ${tenantId}) OR (${providers.tenantId} IS NULL)`);
+  }
+
+  return await db.select().from(providers).where(and(...conditions));
 }
 
 export async function updateProvider(id: number, updates: Partial<typeof providers.$inferInsert>) {
   const db = await getDb();
   if (!db) return;
-  
+
   await db.update(providers)
     .set(updates)
     .where(eq(providers.id, id));
 }
 
-// Request history
-export async function createRequestHistory(id: string, teamId: number, providerId: number | null, taskType: string, inputTokens: number, outputTokens: number, costUsd: number, status: string = 'success', errorMessage?: string) {
+// ─── REQUEST HISTORY (tenant-scoped) ────────────────────────────────────────
+
+export async function createRequestHistory(
+  id: string, teamId: number, providerId: number | null, taskType: string,
+  inputTokens: number, outputTokens: number, costUsd: number,
+  status: string = 'success', errorMessage?: string, tenantId?: number
+) {
   const db = await getDb();
   if (!db) return;
-  
+
   const totalTokens = inputTokens + outputTokens;
-  
+
   await db.insert(requestHistory).values({
     id,
     teamId,
+    tenantId: tenantId ?? null,
     providerId,
     taskType,
     inputTokens,
     outputTokens,
     totalTokens,
-    costUsd: Math.round(costUsd * 1000000), // Store as micro-USD
+    costUsd: Math.round(costUsd * 1000000),
     status,
     errorMessage,
   });
 }
 
-export async function getRequestHistory(teamId: number, limit: number = 50, offset: number = 0) {
+export async function getRequestHistory(teamId: number, limit: number = 50, offset: number = 0, tenantId?: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
+  const conditions = [eq(requestHistory.teamId, teamId)];
+  if (tenantId) conditions.push(eq(requestHistory.tenantId, tenantId));
+
   return await db.select().from(requestHistory)
-    .where(eq(requestHistory.teamId, teamId))
+    .where(and(...conditions))
     .orderBy(desc(requestHistory.createdAt))
     .limit(limit)
     .offset(offset);
 }
 
-export async function getRequestHistoryCount(teamId: number) {
+export async function getRequestHistoryCount(teamId: number, tenantId?: number) {
   const db = await getDb();
   if (!db) return 0;
-  
+
+  const conditions = [eq(requestHistory.teamId, teamId)];
+  if (tenantId) conditions.push(eq(requestHistory.tenantId, tenantId));
+
   const result = await db.select({ count: sql<number>`count(*)` })
     .from(requestHistory)
-    .where(eq(requestHistory.teamId, teamId));
-  
+    .where(and(...conditions));
+
   return result.length > 0 ? Number(result[0].count) : 0;
 }
 
-// Budget management
-export async function getBudgetLimit(teamId: number, monthYear: string) {
+// ─── BUDGET MANAGEMENT (tenant-scoped) ───────────────────────────────────────
+
+export async function getBudgetLimit(teamId: number, monthYear: string, tenantId?: number) {
   const db = await getDb();
   if (!db) return null;
-  
+
+  const conditions = [eq(budgetLimits.teamId, teamId), eq(budgetLimits.monthYear, monthYear)];
+  if (tenantId) conditions.push(eq(budgetLimits.tenantId, tenantId));
+
   const result = await db.select().from(budgetLimits)
-    .where(and(eq(budgetLimits.teamId, teamId), eq(budgetLimits.monthYear, monthYear)))
+    .where(and(...conditions))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : null;
 }
 
-export async function getOrCreateBudgetLimit(teamId: number, monthYear: string, monthlyLimitUsd: number = 10) {
+export async function getOrCreateBudgetLimit(teamId: number, monthYear: string, monthlyLimitUsd: number = 10, tenantId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  let budget = await getBudgetLimit(teamId, monthYear);
-  
+
+  let budget = await getBudgetLimit(teamId, monthYear, tenantId);
+
   if (!budget) {
     await db.insert(budgetLimits).values({
       teamId,
       monthYear,
       monthlyLimitUsd,
       currentSpendUsd: 0,
+      tenantId: tenantId ?? null,
     });
-    
-    budget = await getBudgetLimit(teamId, monthYear);
+
+    budget = await getBudgetLimit(teamId, monthYear, tenantId);
   }
-  
+
   return budget;
 }
 
-export async function updateBudgetSpend(teamId: number, monthYear: string, additionalSpendUsd: number) {
+export async function updateBudgetSpend(teamId: number, monthYear: string, additionalSpendUsd: number, tenantId?: number) {
   const db = await getDb();
   if (!db) return;
-  
-  const budget = await getOrCreateBudgetLimit(teamId, monthYear);
+
+  const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10, tenantId);
   if (!budget) return;
-  
+
   const newSpend = budget.currentSpendUsd + Math.round(additionalSpendUsd * 1000000);
-  
+
   await db.update(budgetLimits)
     .set({ currentSpendUsd: newSpend })
     .where(and(eq(budgetLimits.teamId, teamId), eq(budgetLimits.monthYear, monthYear)));
 }
 
-export async function updateBudgetLimit(teamId: number, monthYear: string, monthlyLimitUsd: number) {
+export async function updateBudgetLimit(teamId: number, monthYear: string, monthlyLimitUsd: number, tenantId?: number) {
   const db = await getDb();
   if (!db) return;
-  
+
+  const conditions = [eq(budgetLimits.teamId, teamId), eq(budgetLimits.monthYear, monthYear)];
+  if (tenantId) conditions.push(eq(budgetLimits.tenantId, tenantId));
+
   await db.update(budgetLimits)
     .set({ monthlyLimitUsd })
-    .where(and(eq(budgetLimits.teamId, teamId), eq(budgetLimits.monthYear, monthYear)));
+    .where(and(...conditions));
 }
 
-// Audit logging
-export async function createAuditLog(userId: number | null, teamId: number | null, action: string, details?: string) {
+// ─── AUDIT LOGGING (tenant-scoped) ───────────────────────────────────────────
+
+export async function createAuditLog(userId: number | null, teamId: number | null, action: string, details?: string, tenantId?: number) {
   const db = await getDb();
   if (!db) return;
-  
+
   await db.insert(auditLogs).values({
     userId,
     teamId,
+    tenantId: tenantId ?? null,
     action,
     details,
   });
 }
+
+// ─── CLEANUP ─────────────────────────────────────────────────────────────────
 
 export async function closeDb() {
   try {

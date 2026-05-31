@@ -34,15 +34,19 @@ export class ProviderService {
     });
   }
 
-  async getProviderStatus(): Promise<ProviderStatus[]> {
-    const providers = await getAllProviders();
+  private key(tenantId: number | undefined, name: string): string {
+    return tenantId ? `forge:${tenantId}:${name}` : name;
+  }
+
+  async getProviderStatus(tenantId?: number): Promise<ProviderStatus[]> {
+    const providers = await getAllProviders(tenantId);
     const statuses: ProviderStatus[] = [];
 
     for (const provider of providers) {
       try {
-        const circuitOpen = await this.redis.get(`circuit:${provider.name}`);
-        const failureCountKey = await this.redis.get(`failures:${provider.name}`);
-        const rateLimitKey = await this.redis.ttl(`ratelimit:${provider.name}`);
+        const circuitOpen = await this.redis.get(this.key(tenantId, `circuit:${provider.name}`));
+        const failureCountKey = await this.redis.get(this.key(tenantId, `failures:${provider.name}`));
+        const rateLimitKey = await this.redis.ttl(this.key(tenantId, `ratelimit:${provider.name}`));
 
         statuses.push({
           id: provider.id,
@@ -57,7 +61,6 @@ export class ProviderService {
           lastChecked: new Date(),
         });
       } catch {
-        // fail-open: return provider with default status
         statuses.push({
           id: provider.id,
           provider: provider.name,
@@ -76,42 +79,42 @@ export class ProviderService {
     return statuses;
   }
 
-  async recordSuccess(providerName: string): Promise<void> {
+  async recordSuccess(providerName: string, tenantId?: number): Promise<void> {
     try {
-      await this.redis.del(`failures:${providerName}`);
+      await this.redis.del(this.key(tenantId, `failures:${providerName}`));
     } catch {} // fail-open
   }
 
-  async recordFailure(providerName: string): Promise<void> {
+  async recordFailure(providerName: string, tenantId?: number): Promise<void> {
     try {
-      const key = `failures:${providerName}`;
+      const key = this.key(tenantId, `failures:${providerName}`);
       const count = await this.redis.incr(key);
       await this.redis.expire(key, 300);
 
       if (count >= this.circuitBreakerThreshold) {
-        await this.redis.setex(`circuit:${providerName}`, this.circuitBreakerTimeout / 1000, "open");
+        await this.redis.setex(this.key(tenantId, `circuit:${providerName}`), this.circuitBreakerTimeout / 1000, "open");
       }
     } catch {} // fail-open
   }
 
-  async isCircuitOpen(providerName: string): Promise<boolean> {
+  async isCircuitOpen(providerName: string, tenantId?: number): Promise<boolean> {
     try {
-      const state = await this.redis.get(`circuit:${providerName}`);
+      const state = await this.redis.get(this.key(tenantId, `circuit:${providerName}`));
       return state === "open";
     } catch {
       return false; // fail-open
     }
   }
 
-  async resetCircuitBreaker(providerName: string): Promise<void> {
-    await this.redis.del(`circuit:${providerName}`, `failures:${providerName}`);
+  async resetCircuitBreaker(providerName: string, tenantId?: number): Promise<void> {
+    await this.redis.del(this.key(tenantId, `circuit:${providerName}`), this.key(tenantId, `failures:${providerName}`));
   }
 
-  async resetProviderHealth(providerName: string): Promise<void> {
+  async resetProviderHealth(providerName: string, tenantId?: number): Promise<void> {
     await this.redis.del(
-      `circuit:${providerName}`,
-      `failures:${providerName}`,
-      `ratelimit:${providerName}`
+      this.key(tenantId, `circuit:${providerName}`),
+      this.key(tenantId, `failures:${providerName}`),
+      this.key(tenantId, `ratelimit:${providerName}`)
     );
   }
 

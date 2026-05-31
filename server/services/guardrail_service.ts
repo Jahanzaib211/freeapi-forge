@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { guardrails, policies } from "../../drizzle/schema";
 
@@ -209,15 +209,20 @@ export class GuardrailService {
     }
   }
 
-  private async getActiveGuardrails(type: string) {
+  private async getActiveGuardrails(type: string, tenantId?: number) {
     const db = await getDb();
     if (!db) return [];
 
     try {
+      const conditions = [eq(guardrails.enabled, 1)];
+      if (tenantId) {
+        conditions.push(sql`(${guardrails.tenantId} = ${tenantId}) OR (${guardrails.tenantId} IS NULL)`);
+      }
+
       const result = await db
         .select()
         .from(guardrails)
-        .where(eq(guardrails.enabled, 1));
+        .where(and(...conditions));
 
       return result.filter((g) => g.type === type);
     } catch {

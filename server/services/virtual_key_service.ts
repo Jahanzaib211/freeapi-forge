@@ -12,6 +12,7 @@ const MICRO_USD = 1_000_000;
 interface CreateKeyInput {
   name: string;
   teamId?: number;
+  tenantId?: number;
   budgetLimitUsd?: number;
   rateLimitTPM?: number;
   rateLimitRPM?: number;
@@ -89,6 +90,7 @@ export class VirtualKeyService {
         keyHash,
         keyPrefix,
         teamId: input.teamId || 1,
+        tenantId: input.tenantId || null,
         budgetLimitUsd: input.budgetLimitUsd || 10,
         rateLimitTPM: input.rateLimitTPM || 100000,
         rateLimitRPM: input.rateLimitRPM || 1000,
@@ -132,17 +134,21 @@ export class VirtualKeyService {
     return result.length > 0 ? (result[0] as VirtualKeyRecord) : null;
   }
 
-  async listKeys(teamId?: number): Promise<VirtualKeyRecord[]> {
+  async listKeys(teamId?: number, tenantId?: number): Promise<VirtualKeyRecord[]> {
     const db = await getDb();
     if (!db) return [];
 
     try {
-      const conditions = teamId ? eq(virtualKeys.teamId, teamId) : undefined;
+      const conditions = [];
+      if (teamId) conditions.push(eq(virtualKeys.teamId, teamId));
+      if (tenantId) conditions.push(eq(virtualKeys.tenantId, tenantId));
+
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
 
       const result = await db
         .select()
         .from(virtualKeys)
-        .where(conditions)
+        .where(where)
         .orderBy(virtualKeys.createdAt);
 
       return result as VirtualKeyRecord[];
@@ -256,15 +262,18 @@ export class VirtualKeyService {
     return { valid: false, error: "Invalid key" };
   }
 
-  async getKeysByTeamId(teamId: number): Promise<VirtualKeyRecord[]> {
+  async getKeysByTeamId(teamId: number, tenantId?: number): Promise<VirtualKeyRecord[]> {
     const db = await getDb();
     if (!db) return [];
 
     try {
+      const conditions = [eq(virtualKeys.teamId, teamId)];
+      if (tenantId) conditions.push(eq(virtualKeys.tenantId, tenantId));
+
       const result = await db
         .select()
         .from(virtualKeys)
-        .where(eq(virtualKeys.teamId, teamId))
+        .where(and(...conditions))
         .orderBy(virtualKeys.createdAt);
 
       return result as VirtualKeyRecord[];

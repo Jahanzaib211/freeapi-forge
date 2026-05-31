@@ -2,9 +2,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/DashboardLayout";
 import NotFound from "@/pages/NotFound";
+import LoginPage from "@/pages/Login";
+import RegisterPage from "@/pages/Register";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import ProviderMonitor from "./pages/ProviderMonitor";
@@ -46,49 +49,67 @@ import AILabHub from "./pages/AILabHub";
 import AuditLogs from "./pages/AuditLogs";
 import LocalModelManager from "./pages/LocalModelManager";
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    window.location.href = "/login";
+    return null;
+  }
+  return <>{children}</>;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/lab" component={() => <DashboardLayout><AILabHub /></DashboardLayout>} />
-      <Route path="/dashboard" component={() => <DashboardLayout><Dashboard /></DashboardLayout>} />
-      <Route path="/inference" component={() => <DashboardLayout><InferenceLab /></DashboardLayout>} />
-      <Route path="/explorer" component={() => <DashboardLayout><ModelExplorer /></DashboardLayout>} />
-      <Route path="/models" component={() => <DashboardLayout><ModelManager /></DashboardLayout>} />
-      <Route path="/providers" component={() => <DashboardLayout><ProviderMonitor /></DashboardLayout>} />
-      <Route path="/requests" component={() => <DashboardLayout><RequestHistory /></DashboardLayout>} />
-      <Route path="/admin" component={() => <DashboardLayout><AdminPanel /></DashboardLayout>} />
-      <Route path="/health" component={() => <DashboardLayout><SystemHealth /></DashboardLayout>} />
-      <Route path="/virtual-keys" component={() => <DashboardLayout><VirtualKeys /></DashboardLayout>} />
-      <Route path="/mcp-servers" component={() => <DashboardLayout><MCPServers /></DashboardLayout>} />
-      <Route path="/skills" component={() => <DashboardLayout><SkillsHub /></DashboardLayout>} />
-      <Route path="/guardrails" component={() => <DashboardLayout><Guardrails /></DashboardLayout>} />
-      <Route path="/tools-hub" component={() => <DashboardLayout><ToolsHub /></DashboardLayout>} />
-      <Route path="/usage" component={() => <DashboardLayout><Usage /></DashboardLayout>} />
-      <Route path="/logs" component={() => <DashboardLayout><Logs /></DashboardLayout>} />
-      <Route path="/error-logs" component={() => <DashboardLayout><ErrorLogs /></DashboardLayout>} />
-      <Route path="/guardrails-monitor" component={() => <DashboardLayout><GuardrailsMonitor /></DashboardLayout>} />
-      <Route path="/teams" component={() => <DashboardLayout><Teams /></DashboardLayout>} />
-      <Route path="/internal-users" component={() => <DashboardLayout><InternalUsers /></DashboardLayout>} />
-      <Route path="/organizations" component={() => <DashboardLayout><Organizations /></DashboardLayout>} />
-      <Route path="/access-groups" component={() => <DashboardLayout><AccessGroups /></DashboardLayout>} />
-      <Route path="/budgets" component={() => <DashboardLayout><Budgets /></DashboardLayout>} />
-      <Route path="/system-monitor" component={() => <DashboardLayout><SystemMonitor /></DashboardLayout>} />
-      <Route path="/process-manager" component={() => <DashboardLayout><ProcessManager /></DashboardLayout>} />
-      <Route path="/local-models" component={() => <DashboardLayout><LocalModelManager /></DashboardLayout>} />
-      <Route path="/llm-discoverer" component={() => <DashboardLayout><LLMDiscoverer /></DashboardLayout>} />
-      <Route path="/api-reference" component={() => <DashboardLayout><APIReference /></DashboardLayout>} />
-      <Route path="/ai-hub" component={() => <DashboardLayout><AIHub /></DashboardLayout>} />
-      <Route path="/settings" component={() => <DashboardLayout><Settings /></DashboardLayout>} />
-      <Route path="/agentic" component={() => <DashboardLayout><Agentic /></DashboardLayout>} />
-      <Route path="/builder" component={() => <DashboardLayout><ForgeBuilder /></DashboardLayout>} />
-      <Route path="/custom-providers" component={() => <DashboardLayout><CustomProviders /></DashboardLayout>} />
-      <Route path="/huggingface" component={() => <DashboardLayout><HuggingFace /></DashboardLayout>} />
-      <Route path="/prompts" component={() => <DashboardLayout><PromptLibrary /></DashboardLayout>} />
-      <Route path="/benchmark" component={() => <DashboardLayout><Benchmark /></DashboardLayout>} />
-      <Route path="/provider-health" component={() => <DashboardLayout><ProviderHealth /></DashboardLayout>} />
-      <Route path="/webhooks" component={() => <DashboardLayout><Webhooks /></DashboardLayout>} />
-      <Route path="/audit-logs" component={() => <DashboardLayout><AuditLogs /></DashboardLayout>} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/explorer" component={() => <ProtectedRoute><DashboardLayout><ModelExplorer /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/models" component={() => <ProtectedRoute><DashboardLayout><ModelManager /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/providers" component={() => <ProtectedRoute><DashboardLayout><ProviderMonitor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/requests" component={() => <ProtectedRoute><DashboardLayout><RequestHistory /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/admin" component={() => <ProtectedRoute><DashboardLayout><AdminPanel /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/health" component={() => <ProtectedRoute><DashboardLayout><SystemHealth /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/virtual-keys" component={() => <ProtectedRoute><DashboardLayout><VirtualKeys /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/mcp-servers" component={() => <ProtectedRoute><DashboardLayout><MCPServers /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/skills" component={() => <ProtectedRoute><DashboardLayout><SkillsHub /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/guardrails" component={() => <ProtectedRoute><DashboardLayout><Guardrails /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/tools-hub" component={() => <ProtectedRoute><DashboardLayout><ToolsHub /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/usage" component={() => <ProtectedRoute><DashboardLayout><Usage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/logs" component={() => <ProtectedRoute><DashboardLayout><Logs /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/error-logs" component={() => <ProtectedRoute><DashboardLayout><ErrorLogs /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/guardrails-monitor" component={() => <ProtectedRoute><DashboardLayout><GuardrailsMonitor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/teams" component={() => <ProtectedRoute><DashboardLayout><Teams /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/internal-users" component={() => <ProtectedRoute><DashboardLayout><InternalUsers /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/organizations" component={() => <ProtectedRoute><DashboardLayout><Organizations /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/access-groups" component={() => <ProtectedRoute><DashboardLayout><AccessGroups /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/budgets" component={() => <ProtectedRoute><DashboardLayout><Budgets /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/system-monitor" component={() => <ProtectedRoute><DashboardLayout><SystemMonitor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/process-manager" component={() => <ProtectedRoute><DashboardLayout><ProcessManager /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/local-models" component={() => <ProtectedRoute><DashboardLayout><LocalModelManager /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/llm-discoverer" component={() => <ProtectedRoute><DashboardLayout><LLMDiscoverer /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/api-reference" component={() => <ProtectedRoute><DashboardLayout><APIReference /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/ai-hub" component={() => <ProtectedRoute><DashboardLayout><AIHub /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/settings" component={() => <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agentic" component={() => <ProtectedRoute><DashboardLayout><Agentic /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/builder" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/custom-providers" component={() => <ProtectedRoute><DashboardLayout><CustomProviders /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/huggingface" component={() => <ProtectedRoute><DashboardLayout><HuggingFace /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/prompts" component={() => <ProtectedRoute><DashboardLayout><PromptLibrary /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/benchmark" component={() => <ProtectedRoute><DashboardLayout><Benchmark /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/provider-health" component={() => <ProtectedRoute><DashboardLayout><ProviderHealth /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/webhooks" component={() => <ProtectedRoute><DashboardLayout><Webhooks /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogs /></DashboardLayout></ProtectedRoute>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

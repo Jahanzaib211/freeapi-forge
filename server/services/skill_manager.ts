@@ -139,12 +139,19 @@ export class SkillManager {
     return null;
   }
 
-  async listSkills(): Promise<SkillDefinition[]> {
+  async listSkills(tenantId?: number): Promise<SkillDefinition[]> {
     const db = await getDb();
     if (!db) return [];
 
     try {
-      const result = await db.select().from(skills).orderBy(skills.name);
+      let query = db.select().from(skills);
+      if (tenantId) {
+        const { and, sql } = await import("drizzle-orm");
+        query = db.select().from(skills).where(
+          and(sql`(${skills.tenantId} = ${tenantId}) OR (${skills.tenantId} IS NULL)`)
+        );
+      }
+      const result = await query.orderBy(skills.name);
       return result as SkillDefinition[];
     } catch {
       return [];

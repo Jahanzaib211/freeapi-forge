@@ -7,6 +7,7 @@ import { errorLogger } from "./error_logger";
 import { guardrailService } from "./guardrail_service";
 import { virtualKeyService } from "./virtual_key_service";
 import { createRequestHistory, createAuditLog, updateBudgetSpend, getOrCreateBudgetLimit, getAllProviders } from "../db";
+import type { TenantRequest } from "../middleware/tenant-resolver";
 
 const TASK_TYPE_MODEL_MAP: Record<string, string> = {
   chat: "fast-70b",
@@ -30,6 +31,11 @@ async function resolveTeamIdFromRequest(req: Request): Promise<number> {
   return 1;
 }
 
+function resolveTenantIdFromRequest(req: Request): number {
+  const tenantReq = req as TenantRequest;
+  return tenantReq.tenantId || 1;
+}
+
 export async function handleStreamChat(req: Request, res: Response) {
   const { messages, taskType, maxTokens, temperature, model: directModel } = req.body;
 
@@ -39,12 +45,13 @@ export async function handleStreamChat(req: Request, res: Response) {
 
   // Resolve team and user context
   const teamId = await resolveTeamIdFromRequest(req);
+  const tenantId = resolveTenantIdFromRequest(req);
   const monthYear = new Date().toISOString().slice(0, 7);
   const inputText = messages?.map((m: any) => m.content || "").join("\n") || "";
 
   // Budget check
   try {
-    const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10);
+    const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10, tenantId);
     if (budget) {
       const currentSpendUsd = budget.currentSpendUsd / 1000000;
       if (currentSpendUsd >= budget.monthlyLimitUsd) {
@@ -87,7 +94,7 @@ export async function handleStreamChat(req: Request, res: Response) {
       await providerService.recordSuccess(providerName);
     }
 
-    const allProviders = await getAllProviders();
+    const allProviders = await getAllProviders(tenantId);
     const providerRecord = allProviders.find((p: any) => p.name === providerName);
 
     await createRequestHistory(
@@ -98,16 +105,19 @@ export async function handleStreamChat(req: Request, res: Response) {
       0,
       tokenCount,
       costUsd,
-      error ? "error" : "success"
+      error ? "error" : "success",
+      undefined,
+      tenantId
     );
 
-    await updateBudgetSpend(teamId, monthYear, costUsd);
+    await updateBudgetSpend(teamId, monthYear, costUsd, tenantId);
 
     await createAuditLog(
       null,
       teamId,
       "CHAT_COMPLETION",
-      JSON.stringify({ model, tokens: tokenCount, latencyMs, provider: providerName })
+      JSON.stringify({ model, tokens: tokenCount, latencyMs, provider: providerName }),
+      tenantId
     );
 
     // Post-call guardrails
