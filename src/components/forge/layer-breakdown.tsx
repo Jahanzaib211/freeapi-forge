@@ -4,7 +4,7 @@ import { LAYERS, NODES, EDGES, LANGUAGE_COLORS, STATUS_STYLES, TREE_STATS, type 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Cpu, Zap, Terminal, Database, Globe, Boxes, HardDrive, Shield, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Cpu, Zap, Terminal, Database, Globe, Boxes, HardDrive, Shield, AlertTriangle, CheckCircle2, ExternalLink, Layers } from 'lucide-react';
 
 function LanguageIcon({ lang }: { lang: string }) {
   const color = LANGUAGE_COLORS[lang as keyof typeof LANGUAGE_COLORS] || '#94A3B8';
@@ -26,7 +26,10 @@ export default function LayerBreakdown() {
     <section className="space-y-4">
       <div className="flex items-center gap-3 mb-6">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-        <h2 className="text-lg font-bold text-foreground tracking-tight">Layer Architecture</h2>
+        <h2 className="text-lg font-bold text-foreground tracking-tight forge-section-header">
+          <Layers size={18} className="text-[#00FFB2]" />
+          Layer Architecture
+        </h2>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
       </div>
 
@@ -46,7 +49,7 @@ export default function LayerBreakdown() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
             >
-              <Card className="bg-card/60 backdrop-blur border-border hover:border-opacity-80 transition-all duration-300 group overflow-hidden hover:shadow-lg hover:shadow-black/20">
+              <Card className="bg-card/60 backdrop-blur border-border hover:border-opacity-80 transition-all duration-300 group overflow-hidden hover:shadow-lg hover:shadow-black/20 shadow-sm">
                 <div className="h-0.5 transition-opacity duration-300 group-hover:opacity-100 opacity-60" style={{ backgroundColor: layer.color }} />
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-center justify-between">

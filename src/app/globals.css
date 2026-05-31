@@ -319,3 +319,86 @@ kbd {
   0% { width: 0; }
   100% { width: 100%; }
 }
+
+/* ─── Task 6-a: Styling fixes for 9+/10 quality ──────────────────── */
+
+/* Hero gradient shift — slowly shifting background gradient on hero */
+@keyframes hero-gradient-shift {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 100%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 0%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-hero-gradient {
+  background-size: 200% 200%;
+  animation: hero-gradient-shift 15s ease infinite;
+}
+
+/* Section header with left accent bar */
+.forge-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 2px solid #00FFB2;
+  padding-left: 0.75rem;
+}
+
+/* Stat accent bar — colored top bar for stat cards */
+.stat-accent-bar {
+  height: 2px;
+  border-radius: 9999px;
+  width: 100%;
+}
+
+/* Text brightness utility */
+.text-bright {
+  color: oklch(0.95 0 0 / 0.9);
+}
+
+/* Footer breathing glow separator */
+@keyframes footer-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+.animate-footer-glow {
+  animation: footer-glow 4s ease-in-out infinite;
+}
+
+/* Navbar bottom glow line when scrolled */
+.nav-glow-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0,255,178,0.10) 30%, rgba(0,255,178,0.15) 50%, rgba(0,255,178,0.10) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Graph canvas gradient overlays for depth */
+.graph-overlay-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(10,10,15,0.6) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+.graph-overlay-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to top, rgba(10,10,15,0.6) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Detail panel left accent border when node selected */
+.detail-panel-active {
+  border-left: 2px solid #00FFB2;
+}

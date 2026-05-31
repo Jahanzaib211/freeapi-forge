@@ -462,3 +462,180 @@ NEXT PHASE PRIORITIES
 3. (Low) Dark/light theme toggle
 4. (Low) Quick tutorial overlay for first-time visitors
 5. (Low) Add print-friendly stylesheet for documentation
+
+---
+Task ID: 6-b
+Agent: features-dev
+Task: Add export graph, enhanced tooltips, roadmap section
+
+Work Log:
+- Read worklog.md and all relevant source files for full project context
+- Added Export Graph as SVG/PNG feature to arch-graph.tsx:
+  - Import `Download` icon from lucide-react
+  - Added `showExportMenu` state for dropdown toggle
+  - Added `exportSVG` callback: serializes SVG element via XMLSerializer, creates Blob, triggers download
+  - Added `exportPNG` callback: serializes SVG → Blob URL → Image → 2x Canvas (3600x3000) with #0a0a0f background → PNG Blob download
+  - Added export dropdown button next to Reset in View Controls panel with two options: "Download SVG" and "Download PNG (2x)"
+  - Dropdown positioned absolutely, styled with dark card + blur backdrop
+- Added Enhanced Graph Node Hover Tooltips to arch-graph.tsx:
+  - Added `tooltipPos` and `tooltipNode` state for cursor-following tooltip
+  - Modified node `onMouseEnter` to set tooltip node + cursor position (only when no node is selected)
+  - Modified node `onMouseMove` to update tooltip position in real-time (15px offset)
+  - Modified node `onMouseLeave` to clear tooltip
+  - Added tooltip div outside SVG (inside container div) with:
+    - Node name (bold), status badge with colored dot, language icon + name
+    - Risk level warning for moderate/critical (orange text with emoji)
+    - "Click to inspect" hint
+    - Dark blur backdrop styling, `animate-tooltip-in` animation
+- Created new component `src/components/forge/roadmap-section.tsx`:
+  - 8-milestone timeline with vertical gradient line
+  - Status types: complete (green), active (yellow), planned (blue), future (gray)
+  - Each milestone card shows: phase label, title, status badge, week range, 4 deliverable items
+  - Color-coded timeline dots with matching icons (CheckCircle2, Rocket, Clock, Circle)
+  - Progress bar at bottom: 37.5% (3/8 phases), gradient fill, week markers
+- Updated page.tsx:
+  - Imported `RoadmapSection` component and `Star` icon
+  - Added 'Roadmap' nav item between 'Build' and 'Discord' (13 nav items total)
+  - Added `#roadmap` section between Build Order and Discord Integration with ScrollRevealSection wrapper
+  - Updated version label from v2.3 → v2.4
+- Ran `bun run lint` — clean, 0 errors, 0 warnings
+- Dev server: 200 OK, compiled successfully
+
+Stage Summary:
+- 4 features added: Export SVG, Export PNG, Node Hover Tooltips, Roadmap & Milestones section
+- 2 files modified: src/components/forge/arch-graph.tsx, src/app/page.tsx
+- 1 file created: src/components/forge/roadmap-section.tsx
+- Version bumped to v2.4
+- Total sections on page: 14 (was 13) — new Roadmap section between Build and Discord
+- Total nav items: 13 (was 12) — new 'Roadmap' link
+- Export uses no new dependencies (XMLSerializer, Canvas API, Blob all native browser APIs)
+- Lint: 0 errors, 0 warnings
+- Server: 200 OK
+
+---
+Task ID: 6-a
+Agent: styling-expert
+Task: Fix all styling issues identified by VLM QA (6/10 → target 9/10)
+
+Work Log:
+- Read worklog.md and all source files to understand full project context
+- Enhanced globals.css with 8 new CSS utilities/animations:
+  1. `@keyframes hero-gradient-shift` + `.animate-hero-gradient` — slowly shifting background gradient
+  2. `.forge-section-header` — left 2px #00FFB2 accent bar with padding
+  3. `.stat-accent-bar` — colored gradient top bar (h-[2px] rounded-full) for stat cards
+  4. `.text-bright` — text-foreground/90 utility
+  5. `@keyframes footer-glow` + `.animate-footer-glow` — breathing glow for footer separator
+  6. `.nav-glow-line` — gradient bottom glow line for navbar when scrolled
+  7. `.graph-overlay-top` / `.graph-overlay-bottom` — gradient overlays for graph canvas depth
+  8. `.detail-panel-active` — 2px left #00FFB2 border for selected node detail panel
+- Enhanced Hero section in page.tsx:
+  - Subtitle brightness: `text-foreground/70` → `text-foreground/85`
+  - Title "Dependency Tree": added `textShadow: '0 0 40px rgba(0,255,178,0.3)'` for glow prominence
+  - Added gradient overlay for visual depth
+  - Main glow blob: added `animate-hero-gradient` class for shifting animation
+  - Stats icons: size increased from 16px → 18px
+  - Stats cards: added color-matched `stat-accent-bar` gradient strip at top
+  - Stats grid: `grid-cols-2` → `grid-cols-3` on mobile for tighter layout
+  - New "Explore Graph ↓" CTA button with scroll-to-graph behavior
+  - Mobile top padding: `pt-28` → `pt-20` on small screens
+- Enhanced Navbar:
+  - Inactive links: `text-muted-foreground` → `text-foreground/60`
+  - Active links: `bg-[#00FFB2]/5` → `bg-[#00FFB2]/10`
+  - Added `font-medium` to all nav links
+  - Added `nav-glow-line` div when scrolled
+- Enhanced Graph section (arch-graph.tsx):
+  - Sidebar cards: padding `p-3` → `p-4`, spacing `space-y-3` → `space-y-4`
+  - Node text: fill `#94a3b8` → `#b8c4d0`, font-size `10` → `10.5`, weight `400` → `500`
+  - Added gradient overlays to canvas
+  - Detail panel: 2px #00FFB2 left border when node selected
+  - Mobile: graph controls panel collapsible
+- Enhanced Overview Strip: `shadow-sm` → `shadow-md`, intensified hover shadows
+- Enhanced Layer cards: added `shadow-sm`, `forge-section-header` pattern
+- Enhanced Footer: breathing glow separator
+- Ran `bun run lint` — clean
+
+Stage Summary:
+- 8 CSS utilities/animations added
+- Hero: brighter text, title glow, gradient overlay, animated blob, stat accent bars, CTA button
+- Navbar: more legible links, stronger active state, bottom glow
+- Graph: better sidebar spacing, node contrast, canvas overlays, mobile collapsible
+- VLM: Desktop 6/10 → 7/10, Mobile 3/10 → 7/10
+- Files modified: globals.css, page.tsx, arch-graph.tsx, layer-breakdown.tsx
+
+---
+Task ID: 6
+Agent: main (webDevReview-cron)
+Task: QA round 3 — comprehensive styling + feature expansion
+
+Work Log:
+- Performed QA with agent-browser: 6 screenshots (hero, graph, roadmap, mobile)
+- VLM analysis: Desktop hero 7/10 (up from 6), Mobile 7/10 (up from 3)
+- 0 browser/console errors, lint clean, server 200 OK
+- Dispatched 2 parallel subagent tasks (6-a styling, 6-b features)
+- Both completed successfully
+
+Stage Summary:
+- 10+ styling fixes, 4 new features
+- Version: v2.4
+- 14 sections, 13 nav items
+- VLM ratings: Desktop 7/10, Mobile 7/10
+
+---
+CURRENT PROJECT STATUS (v2.4)
+============================
+- Forge Studio Dependency Tree v2.4 — comprehensive, production-quality interactive visualization
+- 56 nodes, 9 layers, 135 edges, 21 DB tables, 11 build phases (16.5 weeks)
+- 14 component files, 13-section navigation, dark theme with #00FFB2 accent
+- VLM quality: 7/10 desktop (up from 6), 7/10 mobile (up from 3)
+
+COMPLETED IN THIS ROUND (Task IDs: 6, 6-a, 6-b)
+=====================================================
+✅ VLM QA — 6 screenshots, 0 errors
+✅ Desktop 6/10 → 7/10, Mobile 3/10 → 7/10
+✅ Export Graph as SVG + PNG (2x)
+✅ Node Hover Tooltips (cursor-following)
+✅ Roadmap & Milestones (8-phase timeline)
+✅ Hero: brighter text, title glow, CTA button, gradient overlay
+✅ Navbar: legible links, bottom glow line
+✅ Graph: sidebar spacing, node contrast, canvas overlays
+✅ Stats: accent bars, 3-col mobile grid
+✅ Footer: breathing glow
+✅ 8 new CSS utilities/animations
+✅ Version v2.4, Lint clean, Server 200 OK
+
+RESOLVED ISSUES (all tracked)
+==========================================
+✅ #1-#22 All issues resolved (see full list above)
+
+FILES STRUCTURE (v2.4)
+=======================
+- src/lib/forge-tree-data.ts — 56 nodes, 135 edges, 9 layers, 21 DB tables
+- src/components/forge/arch-graph.tsx — Graph (zoom/pan/filter/search/export/tooltips/mini-map)
+- src/components/forge/layer-breakdown.tsx — 9 layer cards
+- src/components/forge/build-order.tsx — 11-phase timeline
+- src/components/forge/detail-sections.tsx — DB schemas, SPOF, tech matrix
+- src/components/forge/discord-section.tsx — Discord integration spec
+- src/components/forge/docker-stack.tsx — Docker Compose architecture
+- src/components/forge/p2p-network.tsx — P2P marketplace
+- src/components/forge/pricing-section.tsx — Pricing tiers
+- src/components/forge/launch-rewards.tsx — Launch rewards program
+- src/components/forge/mirror-test.tsx — Self-hosting proof
+- src/components/forge/roadmap-section.tsx — NEW: 8-phase roadmap timeline
+- src/app/page.tsx — Main assembly (14 sections, 13 nav items)
+- src/app/globals.css — Dark theme, 30+ CSS utilities
+
+REMAINING ITEMS (low priority)
+================================
+1. (Low) Dark/light theme toggle
+2. (Low) Getting started tutorial overlay
+3. (Low) Print-friendly stylesheet
+4. (Low) Additional micro-interactions
+5. (Low) Hero background visual element
+
+NEXT PHASE PRIORITIES
+=======================
+1. (Low) Dark/light theme toggle
+2. (Low) Tutorial overlay
+3. (Low) Print stylesheet
+4. (Low) Polish pass
+5. (Low) Hero visual element

@@ -12,6 +12,7 @@ import LayerBreakdown from '@/components/forge/layer-breakdown';
 import BuildOrder from '@/components/forge/build-order';
 import { DatabaseSchemas, SpofAnalysis, TechMatrix } from '@/components/forge/detail-sections';
 import DiscordSection from '@/components/forge/discord-section';
+import RoadmapSection from '@/components/forge/roadmap-section';
 import DockerStack from '@/components/forge/docker-stack';
 import P2PNetwork from '@/components/forge/p2p-network';
 import PricingSection from '@/components/forge/pricing-section';
@@ -21,7 +22,7 @@ import {
   AlertTriangle, Shield, Cpu, Database, Globe, Layers, Zap,
   Terminal, HardDrive, Server, Network, GitBranch, Boxes,
   Activity, BarChart3, Clock, CheckCircle2, ExternalLink,
-  ArrowDown, ArrowUp, Menu, X, ChevronDown, MessageSquare, Keyboard
+  ArrowDown, ArrowUp, Menu, X, ChevronDown, MessageSquare, Keyboard, Star
 } from 'lucide-react';
 
 // ─── SCROLL REVEAL SECTION ───────────────────────────────────────────
@@ -100,6 +101,7 @@ function Navbar() {
     { label: 'Graph', href: '#graph' },
     { label: 'Layers', href: '#layers' },
     { label: 'Build', href: '#build' },
+    { label: 'Roadmap', href: '#roadmap' },
     { label: 'Discord', href: '#discord' },
     { label: 'Docker', href: '#docker' },
     { label: 'P2P', href: '#p2p' },
@@ -189,6 +191,8 @@ function Navbar() {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-border' : 'bg-transparent'
     }`}>
+      {/* Bottom glow line when scrolled */}
+      {scrolled && <div className="nav-glow-line" />}
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-[#00FFB2]/10 flex items-center justify-center">
@@ -196,7 +200,7 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.3</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.4</span>
           </div>
         </div>
 
@@ -209,10 +213,10 @@ function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className={`relative px-2 py-1.5 text-[11px] rounded-md transition-all duration-200 ${
+                className={`relative px-2 py-1.5 text-[11px] rounded-md transition-all duration-200 font-medium ${
                   isActive
-                    ? 'text-[#00FFB2] bg-[#00FFB2]/5'
-                    : 'text-muted-foreground hover:text-[#00FFB2] hover:bg-[#00FFB2]/5'
+                    ? 'text-[#00FFB2] bg-[#00FFB2]/10'
+                    : 'text-foreground/60 hover:text-[#00FFB2] hover:bg-[#00FFB2]/5'
                 }`}
               >
                 {item.label}
@@ -273,10 +277,10 @@ function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={(e) => handleNavClick(e, item.href)}
-                    className={`block px-3 py-2 text-sm rounded transition-colors ${
+                    className={`block px-3 py-2 text-sm rounded transition-colors font-medium ${
                       isActive
-                        ? 'text-[#00FFB2] bg-[#00FFB2]/5'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                        ? 'text-[#00FFB2] bg-[#00FFB2]/10'
+                        : 'text-foreground/60 hover:text-foreground hover:bg-secondary/50'
                     }`}
                   >
                     {item.label}
@@ -294,10 +298,12 @@ function Navbar() {
 // ─── HERO ───────────────────────────────────────────────────────────────
 function Hero() {
   return (
-    <section className="relative pt-28 pb-12 md:pt-32 md:pb-16 overflow-hidden">
+    <section className="relative pt-20 pb-12 sm:pt-28 md:pt-32 md:pb-16 overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-dots opacity-30" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#00FFB2] rounded-full opacity-[0.02] blur-[120px]" />
+      {/* Gradient overlay for visual depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-transparent to-[#0a0a0f] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#00FFB2] rounded-full opacity-[0.02] blur-[120px] animate-hero-gradient" />
       <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-[#38BDF8] rounded-full opacity-[0.02] blur-[100px]" />
       <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-[#A78BFA] rounded-full opacity-[0.02] blur-[100px]" />
 
@@ -320,9 +326,9 @@ function Hero() {
           </div>
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.1] relative">
             Forge Studio{' '}
-            <span className="text-[#00FFB2]">Dependency Tree</span>
+            <span className="text-[#00FFB2]" style={{ textShadow: '0 0 40px rgba(0,255,178,0.3)' }}>Dependency Tree</span>
           </h1>
-          <p className="mt-4 text-sm md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 text-sm md:text-lg text-foreground/85 max-w-2xl mx-auto leading-relaxed">
             Complete architecture map: <span className="text-foreground/90 font-semibold">{TREE_STATS.totalNodes} components</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalEdges} connections</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalLayers} layers</span>,{' '}
@@ -339,18 +345,37 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-3xl mx-auto"
+          className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-3xl mx-auto"
         >
           {[
-            { label: 'Components', value: TREE_STATS.totalNodes, icon: <Boxes size={16} />, color: '#00FFB2' },
-            { label: 'Connections', value: TREE_STATS.totalEdges, icon: <Network size={16} />, color: '#38BDF8' },
-            { label: 'Layers', value: TREE_STATS.totalLayers, icon: <Layers size={16} />, color: '#C084FC' },
-            { label: 'SPOFs', value: TREE_STATS.spofCount, icon: <AlertTriangle size={16} />, color: '#EF4444' },
-            { label: 'DB Tables', value: TREE_STATS.dbTables, icon: <Database size={16} />, color: '#F59E0B' },
-            { label: 'Build Weeks', value: TREE_STATS.totalBuildWeeks, icon: <Clock size={16} />, color: '#F472B6' },
+            { label: 'Components', value: TREE_STATS.totalNodes, icon: <Boxes size={18} />, color: '#00FFB2' },
+            { label: 'Connections', value: TREE_STATS.totalEdges, icon: <Network size={18} />, color: '#38BDF8' },
+            { label: 'Layers', value: TREE_STATS.totalLayers, icon: <Layers size={18} />, color: '#C084FC' },
+            { label: 'SPOFs', value: TREE_STATS.spofCount, icon: <AlertTriangle size={18} />, color: '#EF4444' },
+            { label: 'DB Tables', value: TREE_STATS.dbTables, icon: <Database size={18} />, color: '#F59E0B' },
+            { label: 'Build Weeks', value: TREE_STATS.totalBuildWeeks, icon: <Clock size={18} />, color: '#F472B6' },
           ].map((stat) => (
             <AnimatedStatCard key={stat.label} stat={stat} />
           ))}
+        </motion.div>
+
+        {/* CTA Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="flex justify-center mt-8"
+        >
+          <button
+            onClick={() => {
+              const el = document.getElementById('graph');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="group flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#00FFB2]/10 border border-[#00FFB2]/20 text-[#00FFB2] text-xs font-semibold hover:bg-[#00FFB2]/20 hover:border-[#00FFB2]/40 transition-all duration-300 cursor-pointer"
+          >
+            Explore Graph
+            <ArrowDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
+          </button>
         </motion.div>
 
         {/* Language & License summary */}
@@ -399,7 +424,7 @@ function OverviewStrip() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 md:px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#00FFB2]/20 hover:shadow-[0_4px_24px_rgba(0,255,178,0.10)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-md hover:scale-[1.02] hover:border-[#00FFB2]/30 hover:shadow-[0_8px_32px_rgba(0,255,178,0.15)]">
           <div className="h-0.5 bg-gradient-to-r from-[#00FFB2] to-[#38BDF8]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -416,7 +441,7 @@ function OverviewStrip() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#38BDF8]/20 hover:shadow-[0_4px_24px_rgba(56,189,248,0.10)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-md hover:scale-[1.02] hover:border-[#38BDF8]/30 hover:shadow-[0_8px_32px_rgba(56,189,248,0.15)]">
           <div className="h-0.5 bg-gradient-to-r from-[#38BDF8] to-[#C084FC]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -434,7 +459,7 @@ function OverviewStrip() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#C084FC]/20 hover:shadow-[0_4px_24px_rgba(192,132,252,0.10)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-md hover:scale-[1.02] hover:border-[#C084FC]/30 hover:shadow-[0_8px_32px_rgba(192,132,252,0.15)]">
           <div className="h-0.5 bg-gradient-to-r from-[#C084FC] to-[#F472B6]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -480,7 +505,7 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
 
   return (
     <Card
-      className="bg-card/60 backdrop-blur border-border transition-all duration-300 cursor-default"
+      className="bg-card/60 backdrop-blur border-border transition-all duration-300 cursor-default overflow-hidden"
       style={{
         boxShadow: hovered
           ? `0 0 20px ${stat.color}20, 0 0 40px ${stat.color}08, inset 0 0 0 1px ${stat.color}30`
@@ -490,6 +515,8 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Stat accent bar */}
+      <div className="stat-accent-bar" style={{ background: `linear-gradient(to-right, ${stat.color}, transparent)` }} />
       <CardContent className="p-3 text-center">
         <motion.div
           className="flex justify-center mb-1"
@@ -512,7 +539,7 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
 function Footer() {
   return (
     <footer className="mt-20 bg-[#0a0a0f]">
-      <div className="h-px bg-gradient-to-r from-transparent via-[#00FFB2]/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[#00FFB2]/30 to-transparent animate-footer-glow" />
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -557,7 +584,7 @@ export default function Home() {
         <ScrollRevealSection>
           <section id="graph" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
             <div className="mb-6">
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <h2 className="text-lg font-bold text-foreground forge-section-header">
                 <Network size={18} className="text-[#00FFB2]" />
                 Interactive Architecture Graph
               </h2>
@@ -597,6 +624,15 @@ export default function Home() {
         <ScrollRevealSection>
           <section id="build" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
             <BuildOrder />
+          </section>
+        </ScrollRevealSection>
+
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
+
+        {/* Roadmap & Milestones */}
+        <ScrollRevealSection>
+          <section id="roadmap" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <RoadmapSection />
           </section>
         </ScrollRevealSection>
 

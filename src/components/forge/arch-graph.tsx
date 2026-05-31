@@ -16,7 +16,8 @@ import {
   AlertTriangle, CheckCircle2, Zap, ExternalLink, ArrowDown,
   ArrowRight, ChevronLeft, ChevronRight, Minus, Plus, RotateCcw,
   Layers, Shield, Cpu, HardDrive, Database, Globe, Terminal,
-  Workflow, Boxes, ChevronDown, Search, Filter
+  Workflow, Boxes, ChevronDown, ChevronUp, Search, Filter,
+  Download
 } from 'lucide-react';
 
 // Layout constants
@@ -109,9 +110,13 @@ export default function ArchGraph() {
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilter, setQuickFilter] = useState<'all' | 'spof' | 'ready' | 'critical'>('all');
   const [showMiniMap, setShowMiniMap] = useState(true);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 700 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragState, setIsDragState] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipNode, setTooltipNode] = useState<LayoutNode | null>(null);
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
@@ -237,6 +242,54 @@ export default function ArchGraph() {
     setQuickFilter('all');
   }, []);
 
+  const exportSVG = useCallback(() => {
+    const svgEl = containerRef.current?.querySelector('svg');
+    if (!svgEl) return;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgEl);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'forge-studio-graph.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  }, []);
+
+  const exportPNG = useCallback(() => {
+    const svgEl = containerRef.current?.querySelector('svg');
+    if (!svgEl) return;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgEl);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      canvas.width = CANVAS_W * scale;
+      canvas.height = CANVAS_H * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const pngUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = 'forge-studio-graph.png';
+        a.click();
+        URL.revokeObjectURL(pngUrl);
+      });
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+    setShowExportMenu(false);
+  }, []);
+
   const toggleLayer = useCallback((layerId: number) => {
     setVisibleLayers(prev => {
       const next = [...prev];
@@ -281,10 +334,19 @@ export default function ArchGraph() {
   return (
     <TooltipProvider delayDuration={100}>
       <div className="flex flex-col lg:flex-row gap-4 w-full">
+        {/* Mobile toggle for controls panel */}
+        <button
+          onClick={() => setControlsOpen(!controlsOpen)}
+          className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-card/80 border border-border text-xs font-medium text-foreground/60 hover:text-[#00FFB2] transition-colors w-full"
+        >
+          {controlsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {controlsOpen ? 'Hide Controls' : 'Show Controls'}
+        </button>
+
         {/* Controls Panel */}
-        <div className="lg:w-64 flex-shrink-0 space-y-3">
+        <div className={`lg:w-64 flex-shrink-0 space-y-4 ${controlsOpen ? 'block' : 'hidden lg:block'}`}>
           {/* Zoom Controls */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">View Controls</h3>
             <div className="flex items-center gap-2">
               <button onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="p-1.5 rounded bg-secondary hover:bg-accent transition-colors">
@@ -296,12 +358,37 @@ export default function ArchGraph() {
               <button onClick={resetView} className="p-1.5 rounded bg-secondary hover:bg-accent transition-colors flex-1 text-xs text-muted-foreground">
                 <RotateCcw size={14} className="inline mr-1" />Reset
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="p-1.5 rounded bg-secondary hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  title="Export graph"
+                >
+                  <Download size={14} />
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-36 bg-[#0a0a0f]/95 backdrop-blur-xl border border-border rounded-lg p-1 z-50 shadow-xl">
+                    <button
+                      onClick={exportSVG}
+                      className="w-full text-left text-[10px] px-2 py-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Download SVG
+                    </button>
+                    <button
+                      onClick={exportPNG}
+                      className="w-full text-left text-[10px] px-2 py-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Download PNG (2x)
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="text-[10px] text-muted-foreground">Zoom: {Math.round(zoom * 100)}%</div>
           </div>
 
           {/* Filter Controls */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Filters</h3>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input
@@ -338,7 +425,7 @@ export default function ArchGraph() {
           </div>
 
           {/* Node Search */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               <Search size={12} className="inline mr-1" />Search Nodes
             </h3>
@@ -448,7 +535,7 @@ export default function ArchGraph() {
           </div>
 
           {/* Layer Toggles */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               <Layers size={12} className="inline mr-1" />Layers
             </h3>
@@ -468,7 +555,7 @@ export default function ArchGraph() {
           </div>
 
           {/* Edge Legend */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Edge Types</h3>
             <div className="grid grid-cols-1 gap-1">
               {Object.entries(EDGE_COLORS).map(([type, color]) => (
@@ -481,7 +568,7 @@ export default function ArchGraph() {
           </div>
 
           {/* Language Legend */}
-          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Languages</h3>
             <div className="grid grid-cols-2 gap-1">
               {Object.entries(LANGUAGE_COLORS).map(([lang, color]) => (
@@ -507,6 +594,9 @@ export default function ArchGraph() {
           >
             {/* Grid background */}
             <div className="absolute inset-0 bg-grid opacity-50" />
+            {/* Gradient overlays for depth */}
+            <div className="graph-overlay-top" />
+            <div className="graph-overlay-bottom" />
 
             <svg
               width={CANVAS_W}
@@ -623,8 +713,22 @@ export default function ArchGraph() {
                     key={node.id}
                     className="cursor-pointer"
                     onClick={() => handleNodeClick(node)}
-                    onMouseEnter={() => handleNodeHover(node.id)}
-                    onMouseLeave={() => handleNodeHover(null)}
+                    onMouseEnter={(e) => {
+                      handleNodeHover(node.id);
+                      if (!selectedNode) {
+                        setTooltipNode(node);
+                        setTooltipPos({ x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                    onMouseMove={(e) => {
+                      if (tooltipNode?.id === node.id) {
+                        setTooltipPos({ x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      handleNodeHover(null);
+                      setTooltipNode(null);
+                    }}
                     opacity={isSearchActive && !isSearchMatch ? 0.15 : 1}
                   >
                     {/* SPOF indicator glow */}
@@ -686,9 +790,9 @@ export default function ArchGraph() {
                     {/* Node name */}
                     <text
                       x={node.x + 32} y={node.y + 22}
-                      fill={isHovered || isSelected ? '#e2e8f0' : (isSearchActive && isSearchMatch ? '#c0c8d4' : '#94a3b8')}
-                      fontSize="10"
-                      fontWeight={isSelected || (isSearchActive && isSearchMatch) ? '600' : '400'}
+                      fill={isHovered || isSelected ? '#e2e8f0' : (isSearchActive && isSearchMatch ? '#c0c8d4' : '#b8c4d0')}
+                      fontSize="10.5"
+                      fontWeight={isSelected || (isSearchActive && isSearchMatch) ? '600' : '500'}
                     >
                       {node.shortName || node.name}
                     </text>
@@ -795,6 +899,28 @@ export default function ArchGraph() {
               </button>
             )}
 
+            {/* Hover Tooltip */}
+            {tooltipNode && !selectedNode && (
+              <div
+                className="absolute z-20 pointer-events-none bg-[#0a0a0f]/95 backdrop-blur-xl border border-border rounded-lg p-2.5 shadow-xl max-w-[200px] animate-tooltip-in"
+                style={{ left: tooltipPos.x + 15, top: tooltipPos.y + 15 }}
+              >
+                <div className="text-xs font-bold text-foreground">{tooltipNode.name}</div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_STYLES[tooltipNode.status].color }} />
+                  <span className="text-[9px] text-muted-foreground">{STATUS_STYLES[tooltipNode.status].label}</span>
+                  <span className="text-[9px] text-muted-foreground/50">·</span>
+                  <span className="text-[9px]" style={{ color: LANGUAGE_COLORS[tooltipNode.language] }}>{tooltipNode.language}</span>
+                </div>
+                {tooltipNode.risk !== 'low' && (
+                  <div className="mt-1 text-[9px] text-orange-400">
+                    {tooltipNode.risk === 'critical' ? '⚠ Critical risk' : '⚡ Moderate risk'}
+                  </div>
+                )}
+                <div className="text-[8px] text-muted-foreground/40 mt-1">Click to inspect</div>
+              </div>
+            )}
+
             {/* Zoom info overlay */}
             <div className="absolute bottom-3 right-3 text-[10px] text-muted-foreground/50 font-mono">
               {filteredNodes.length} nodes · {filteredEdges.length} edges
@@ -812,7 +938,7 @@ export default function ArchGraph() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.2 }}
-                className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-3"
+                className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-3 detail-panel-active"
               >
                 <div className="flex items-start justify-between">
                   <div>
