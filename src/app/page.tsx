@@ -21,7 +21,7 @@ import {
   AlertTriangle, Shield, Cpu, Database, Globe, Layers, Zap,
   Terminal, HardDrive, Server, Network, GitBranch, Boxes,
   Activity, BarChart3, Clock, CheckCircle2, ExternalLink,
-  ArrowDown, ArrowUp, Menu, X, ChevronDown, MessageSquare
+  ArrowDown, ArrowUp, Menu, X, ChevronDown, MessageSquare, Keyboard
 } from 'lucide-react';
 
 // ─── SCROLL REVEAL SECTION ───────────────────────────────────────────
@@ -94,6 +94,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
 
   const navItems: { label: string; href: string }[] = [
     { label: 'Graph', href: '#graph' },
@@ -141,6 +142,42 @@ function Navbar() {
     };
   }, []);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      const sectionIds = navItems.map(item => item.href.slice(1));
+      const currentIdx = sectionIds.indexOf(activeSection);
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'j') {
+        e.preventDefault();
+        const nextIdx = currentIdx < sectionIds.length - 1 ? currentIdx + 1 : 0;
+        const el = document.getElementById(sectionIds[nextIdx]);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'k') {
+        e.preventDefault();
+        const prevIdx = currentIdx > 0 ? currentIdx - 1 : sectionIds.length - 1;
+        const el = document.getElementById(sectionIds[prevIdx]);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      } else if (e.key === 'Escape') {
+        setMenuOpen(false);
+        setShowHelp(false);
+      } else if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
+        e.preventDefault();
+        const searchInput = document.getElementById('node-search-input') as HTMLInputElement;
+        if (searchInput) {
+          const graphSection = document.getElementById('graph');
+          if (graphSection) graphSection.scrollIntoView({ behavior: 'smooth' });
+          setTimeout(() => searchInput.focus(), 400);
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeSection]);
+
   const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     setMenuOpen(false);
@@ -159,12 +196,12 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.1</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.2</span>
           </div>
         </div>
 
-        {/* Desktop nav */}
-        <div className="hidden lg:flex items-center gap-1">
+        {/* Desktop nav + help button */}
+        <div className="hidden lg:flex items-center gap-1.5">
           {navItems.map(item => {
             const isActive = activeSection === item.href.slice(1);
             return (
@@ -172,7 +209,7 @@ function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className={`relative px-2.5 py-1.5 text-[11px] rounded-md transition-all duration-200 ${
+                className={`relative px-2 py-1.5 text-[11px] rounded-md transition-all duration-200 ${
                   isActive
                     ? 'text-[#00FFB2] bg-[#00FFB2]/5'
                     : 'text-muted-foreground hover:text-[#00FFB2] hover:bg-[#00FFB2]/5'
@@ -185,6 +222,31 @@ function Navbar() {
               </a>
             );
           })}
+          {/* Keyboard shortcuts help */}
+          <div className="relative">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="p-1.5 text-muted-foreground/50 hover:text-[#00FFB2] hover:bg-[#00FFB2]/5 rounded-md transition-colors"
+              title="Keyboard shortcuts"
+            >
+              <Keyboard size={14} />
+            </button>
+            {showHelp && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-[#0a0a0f]/95 backdrop-blur-xl border border-border rounded-lg p-3 space-y-2 z-50 shadow-xl">
+                <h4 className="text-[10px] font-bold text-foreground uppercase tracking-wider">Keyboard Shortcuts</h4>
+                {[
+                  { keys: '↑ / ↓  or  j / k', desc: 'Navigate sections' },
+                  { keys: 'Esc', desc: 'Close menus' },
+                  { keys: '/  or  Ctrl+K', desc: 'Search nodes' },
+                ].map(s => (
+                  <div key={s.keys} className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground">{s.desc}</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-secondary border border-border text-foreground/70 font-mono text-[9px]">{s.keys}</kbd>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Mobile menu toggle */}
@@ -256,12 +318,11 @@ function Hero() {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-[300px] md:w-[500px] h-[80px] bg-[#00FFB2] rounded-full opacity-[0.08] blur-[60px]" />
           </div>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight relative">
-            Forge Studio
-            <br />
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.1] relative">
+            Forge Studio{' '}
             <span className="text-[#00FFB2]">Dependency Tree</span>
           </h1>
-          <p className="mt-4 text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 text-sm md:text-lg text-foreground/70 max-w-2xl mx-auto leading-relaxed">
             Complete architecture map: <span className="text-foreground/90 font-semibold">{TREE_STATS.totalNodes} components</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalEdges} connections</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalLayers} layers</span>,{' '}
@@ -278,7 +339,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-3xl mx-auto"
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-3xl mx-auto"
         >
           {[
             { label: 'Components', value: TREE_STATS.totalNodes, icon: <Boxes size={16} />, color: '#00FFB2' },
@@ -338,7 +399,7 @@ function OverviewStrip() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 md:px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#00FFB2]/20 hover:shadow-[0_0_24px_rgba(0,255,178,0.06)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#00FFB2]/20 hover:shadow-[0_4px_24px_rgba(0,255,178,0.10)]">
           <div className="h-0.5 bg-gradient-to-r from-[#00FFB2] to-[#38BDF8]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -355,7 +416,7 @@ function OverviewStrip() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#38BDF8]/20 hover:shadow-[0_0_24px_rgba(56,189,248,0.06)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#38BDF8]/20 hover:shadow-[0_4px_24px_rgba(56,189,248,0.10)]">
           <div className="h-0.5 bg-gradient-to-r from-[#38BDF8] to-[#C084FC]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -373,7 +434,7 @@ function OverviewStrip() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#C084FC]/20 hover:shadow-[0_0_24px_rgba(192,132,252,0.06)]">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 shadow-sm hover:scale-[1.02] hover:border-[#C084FC]/20 hover:shadow-[0_4px_24px_rgba(192,132,252,0.10)]">
           <div className="h-0.5 bg-gradient-to-r from-[#C084FC] to-[#F472B6]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -441,7 +502,7 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
         <div className="text-xl md:text-2xl font-black tabular-nums" style={{ color: stat.color }}>
           {count}
         </div>
-        <div className="text-[9px] md:text-[10px] text-muted-foreground font-medium">{stat.label}</div>
+        <div className="text-[9px] md:text-[10px] font-medium" style={{ color: `${stat.color}99` }}>{stat.label}</div>
       </CardContent>
     </Card>
   );

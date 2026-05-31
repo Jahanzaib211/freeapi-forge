@@ -16,7 +16,7 @@ import {
   AlertTriangle, CheckCircle2, Zap, ExternalLink, ArrowDown,
   ArrowRight, ChevronLeft, ChevronRight, Minus, Plus, RotateCcw,
   Layers, Shield, Cpu, HardDrive, Database, Globe, Terminal,
-  Workflow, Boxes, ChevronDown
+  Workflow, Boxes, ChevronDown, Search, Filter
 } from 'lucide-react';
 
 // Layout constants
@@ -106,6 +106,10 @@ export default function ArchGraph() {
   const [showLabels, setShowLabels] = useState(true);
   const [filterCritical, setFilterCritical] = useState(false);
   const [filterEdgeType, setFilterEdgeType] = useState<EdgeType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'spof' | 'ready' | 'critical'>('all');
+  const [showMiniMap, setShowMiniMap] = useState(true);
+  const [containerSize, setContainerSize] = useState({ w: 800, h: 700 });
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragState, setIsDragState] = useState(false);
   const isDragging = useRef(false);
@@ -116,6 +120,36 @@ export default function ArchGraph() {
       layoutNodes.filter(n => visibleLayers[n.layer]).map(n => n.id)
     );
   }, [visibleLayers]);
+
+  // Compute matching node IDs from search query and quick filter
+  const matchingNodeIds = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return new Set(
+      layoutNodes.filter(n => {
+        // Quick filter first
+        if (quickFilter === 'spof' && !n.spof) return false;
+        if (quickFilter === 'ready' && n.status !== 'ready') return false;
+        if (quickFilter === 'critical' && n.risk !== 'critical') return false;
+        // Search query matching
+        if (query) {
+          return (
+            n.name.toLowerCase().includes(query) ||
+            (n.shortName && n.shortName.toLowerCase().includes(query)) ||
+            n.tech.some(t => t.toLowerCase().includes(query)) ||
+            n.description.toLowerCase().includes(query)
+          );
+        }
+        return true;
+      }).map(n => n.id)
+    );
+  }, [searchQuery, quickFilter]);
+
+  const isSearchActive = searchQuery.trim().length > 0 || quickFilter !== 'all';
+
+  const searchResults = useMemo(() => {
+    if (!isSearchActive) return [];
+    return layoutNodes.filter(n => matchingNodeIds.has(n.id));
+  }, [matchingNodeIds, isSearchActive]);
 
   const filteredNodes = useMemo(() => {
     return layoutNodes.filter(n => {
@@ -176,6 +210,21 @@ export default function ArchGraph() {
     setIsDragState(false);
   }, []);
 
+  const focusOnNode = useCallback((nodeId: string) => {
+    const node = layoutNodes.find(n => n.id === nodeId);
+    if (!node || !containerRef.current) return;
+    const containerW = containerRef.current.clientWidth;
+    const containerH = containerRef.current.clientHeight;
+    const targetX = -(node.x + NODE_W / 2) * zoom + containerW / 2;
+    const targetY = -(node.y + NODE_H / 2) * zoom + containerH / 2;
+    setPan({ x: targetX, y: targetY });
+    setSelectedNode(node);
+    const connected = EDGES
+      .filter(e => e.from === node.id || e.to === node.id)
+      .map(e => e.id);
+    setHighlightedEdges(connected);
+  }, [zoom]);
+
   const resetView = useCallback(() => {
     setZoom(0.55);
     setPan({ x: 0, y: 0 });
@@ -184,6 +233,8 @@ export default function ArchGraph() {
     setFilterCritical(false);
     setFilterEdgeType('all');
     setVisibleLayers(LAYERS.map(() => true));
+    setSearchQuery('');
+    setQuickFilter('all');
   }, []);
 
   const toggleLayer = useCallback((layerId: number) => {
@@ -194,14 +245,23 @@ export default function ArchGraph() {
     });
   }, []);
 
-  // Auto-center on mount
+  // Auto-center on mount + track container size
   useEffect(() => {
     if (containerRef.current) {
       const w = containerRef.current.clientWidth;
+      const h = containerRef.current.clientHeight;
+      setContainerSize({ w, h });
       const scale = Math.min(w / CANVAS_W, 0.7);
       setZoom(scale);
       setPan({ x: 0, y: 10 });
     }
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+      }
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const upstreamIds = useMemo(() => {
@@ -275,6 +335,116 @@ export default function ArchGraph() {
               />
               Show edge labels
             </label>
+          </div>
+
+          {/* Node Search */}
+          <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-3 space-y-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <Search size={12} className="inline mr-1" />Search Nodes
+            </h3>
+            <div className="relative">
+              <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
+              <input
+                id="node-search-input"
+                type="text"
+                placeholder="Name, tech, description..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-secondary text-xs pl-7 pr-7 py-1.5 rounded border border-border placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-[#00FFB2]/50 focus:border-[#00FFB2]/30 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground"
+                >
+                  <Minus size={12} />
+                </button>
+              )}
+            </div>
+            {isSearchActive && (
+              <div className="text-[10px] text-muted-foreground">
+                <span className="text-[#00FFB2] font-semibold">{matchingNodeIds.size}</span> of {NODES.length} nodes match
+              </div>
+            )}
+
+            {/* Quick Filter Buttons */}
+            <div className="space-y-1">
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <Filter size={10} className="inline mr-1" />Quick Filters
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setQuickFilter('all')}
+                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                    quickFilter === 'all'
+                      ? 'bg-[#00FFB2]/10 border-[#00FFB2]/30 text-[#00FFB2]'
+                      : 'bg-secondary/50 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setQuickFilter('spof')}
+                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                    quickFilter === 'spof'
+                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                      : 'bg-secondary/50 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  SPOF Only
+                </button>
+                <button
+                  onClick={() => setQuickFilter('ready')}
+                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                    quickFilter === 'ready'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      : 'bg-secondary/50 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Ready Only
+                </button>
+                <button
+                  onClick={() => setQuickFilter('critical')}
+                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                    quickFilter === 'critical'
+                      ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                      : 'bg-secondary/50 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Critical Risk
+                </button>
+              </div>
+            </div>
+
+            {/* Results List */}
+            {searchResults.length > 0 && (
+              <div className="max-h-40 overflow-y-auto space-y-0.5 pr-0.5">
+                {searchResults.map(node => {
+                  const isSelected = selectedNode?.id === node.id;
+                  return (
+                    <button
+                      key={node.id}
+                      onClick={() => focusOnNode(node.id)}
+                      className={`flex items-center gap-1.5 w-full text-left text-[10px] px-1.5 py-1 rounded transition-colors ${
+                        isSelected
+                          ? 'bg-[#00FFB2]/10 text-[#00FFB2]'
+                          : 'bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      }`}
+                    >
+                      <circle
+                        cx={6}
+                        cy={6}
+                        r={3}
+                        fill={STATUS_STYLES[node.status].color}
+                        opacity={0.8}
+                      />
+                      <span className="truncate flex-1">{node.shortName || node.name}</span>
+                      {node.spof && <span className="text-red-400 text-[8px] font-bold">SPOF</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Layer Toggles */}
@@ -442,6 +612,7 @@ export default function ArchGraph() {
                 const isSelected = selectedNode?.id === node.id;
                 const isUpstream = upstreamIds.has(node.id);
                 const isDownstream = downstreamIds.has(node.id);
+                const isSearchMatch = !isSearchActive || matchingNodeIds.has(node.id);
                 const langColor = LANGUAGE_COLORS[node.language] || '#94A3B8';
                 const statusStyle = STATUS_STYLES[node.status];
 
@@ -452,6 +623,7 @@ export default function ArchGraph() {
                     onClick={() => handleNodeClick(node)}
                     onMouseEnter={() => handleNodeHover(node.id)}
                     onMouseLeave={() => handleNodeHover(null)}
+                    opacity={isSearchActive && !isSearchMatch ? 0.15 : 1}
                   >
                     {/* SPOF indicator glow */}
                     {node.spof && (
@@ -480,14 +652,23 @@ export default function ArchGraph() {
                         opacity="0.4" rx="10"
                       />
                     )}
+                    {/* Search match highlight ring */}
+                    {isSearchActive && isSearchMatch && !isSelected && (
+                      <rect
+                        x={node.x - 2} y={node.y - 2}
+                        width={NODE_W + 4} height={NODE_H + 4}
+                        fill="none" stroke="#00FFB2" strokeWidth="1.2"
+                        opacity="0.5" rx="9"
+                      />
+                    )}
                     {/* Node body */}
                     <rect
                       x={node.x} y={node.y}
                       width={NODE_W} height={NODE_H}
                       rx="6"
                       fill={isHovered || isSelected ? '#1a1a2e' : '#12121f'}
-                      stroke={isHovered || isSelected ? langColor : '#2a2a3e'}
-                      strokeWidth={isHovered || isSelected ? 1.5 : 0.8}
+                      stroke={isHovered || isSelected ? langColor : (isSearchActive && isSearchMatch ? '#00FFB2' : '#2a2a3e')}
+                      strokeWidth={isHovered || isSelected ? 1.5 : (isSearchActive && isSearchMatch ? 1.2 : 0.8)}
                     />
                     {/* Status dot */}
                     <circle
@@ -503,9 +684,9 @@ export default function ArchGraph() {
                     {/* Node name */}
                     <text
                       x={node.x + 32} y={node.y + 22}
-                      fill={isHovered || isSelected ? '#e2e8f0' : '#94a3b8'}
+                      fill={isHovered || isSelected ? '#e2e8f0' : (isSearchActive && isSearchMatch ? '#c0c8d4' : '#94a3b8')}
                       fontSize="10"
-                      fontWeight={isSelected ? '600' : '400'}
+                      fontWeight={isSelected || (isSearchActive && isSearchMatch) ? '600' : '400'}
                     >
                       {node.shortName || node.name}
                     </text>
@@ -523,6 +704,63 @@ export default function ArchGraph() {
                 );
               })}
             </svg>
+
+            {/* Mini Map */}
+            {showMiniMap && (
+              <div className="absolute bottom-3 left-3 z-10 bg-[#0a0a0f]/90 border border-border rounded-md overflow-hidden backdrop-blur">
+                <div className="flex items-center justify-between px-1.5 py-0.5 border-b border-border">
+                  <span className="text-[7px] text-muted-foreground uppercase tracking-wider font-bold">Map</span>
+                  <button onClick={() => setShowMiniMap(false)} className="text-muted-foreground/40 hover:text-muted-foreground">
+                    <Minus size={8} />
+                  </button>
+                </div>
+                <svg width="150" height="120" viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} className="block" style={{ transform: `scale(${150 / CANVAS_W})`, transformOrigin: 'top left' }}>
+                  {/* Mini edges */}
+                  {filteredEdges.slice(0, 80).map(edge => {
+                    const from = layoutNodes.find(n => n.id === edge.from);
+                    const to = layoutNodes.find(n => n.id === edge.to);
+                    if (!from || !to) return null;
+                    const x1 = from.x + NODE_W / 2, y1 = from.y + NODE_H / 2;
+                    const x2 = to.x + NODE_W / 2, y2 = to.y;
+                    return <line key={edge.id} x1={x1} y1={y1} x2={x2} y2={y2} stroke={EDGE_COLORS[edge.type]} strokeWidth={1} opacity={0.15} />;
+                  })}
+                  {/* Mini nodes */}
+                  {filteredNodes.map(node => {
+                    const langColor = LANGUAGE_COLORS[node.language] || '#94A3B8';
+                    const isSelected = selectedNode?.id === node.id;
+                    return (
+                      <rect key={node.id} x={node.x} y={node.y} width={NODE_W} height={NODE_H} rx="3"
+                        fill={isSelected ? langColor : langColor + '40'} stroke={isSelected ? langColor : 'none'} strokeWidth={isSelected ? 2 : 0} />
+                    );
+                  })}
+                  {/* Viewport indicator */}
+                  <rect
+                    x={-pan.x / zoom}
+                    y={-pan.y / zoom}
+                    width={containerSize.w / zoom}
+                    height={containerSize.h / zoom}
+                    fill="none"
+                    stroke="#00FFB2"
+                    strokeWidth={4}
+                    opacity={0.4}
+                    rx="6"
+                  />
+                </svg>
+                <div style={{ width: 150, height: (150 / CANVAS_W) * CANVAS_H }} />
+              </div>
+            )}
+            {!showMiniMap && (
+              <button
+                onClick={() => setShowMiniMap(true)}
+                className="absolute bottom-3 left-3 z-10 w-6 h-6 rounded bg-[#0a0a0f]/90 border border-border flex items-center justify-center text-muted-foreground/40 hover:text-[#00FFB2] transition-colors backdrop-blur"
+                title="Show mini-map"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="1" y="1" width="10" height="10" rx="1" />
+                  <rect x="3" y="3" width="4" height="3" rx="0.5" fill="currentColor" opacity="0.4" />
+                </svg>
+              </button>
+            )}
 
             {/* Zoom info overlay */}
             <div className="absolute bottom-3 right-3 text-[10px] text-muted-foreground/50 font-mono">
