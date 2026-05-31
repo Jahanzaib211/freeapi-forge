@@ -1,0 +1,15 @@
+[Unit]
+Description=Forge Studio — PostgreSQL (Docker Container)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker start -a litellm_postgres
+ExecStop=/usr/bin/docker stop litellm_postgres
+Restart=always
+RestartSec=10
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

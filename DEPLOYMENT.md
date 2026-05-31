@@ -1,266 +1,264 @@
-# Forge Studio — Deployment Guide
+# Deployment Guide — Forge Studio v3.0
 
-## Quick Start
+## Production Deployment Options
 
-### One-Click Install (recommended)
+### Option 1: systemd (Recommended for Single Server)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Jahanzaib211/forge-studio/main/install.sh | bash
-```
+The simplest reboot-proof deployment using systemd services.
 
-The installer handles everything: dependencies, build, database, PM2, nginx.
+#### Prerequisites
 
----
+- Linux server with Docker installed
+- PostgreSQL 17 running on port 5434
+- Redis 7 running on port 6379
+- Node.js 22+ with pnpm
 
-## Option A: Docker Compose
-
-### Prerequisites
-- Docker and Docker Compose
-- 4GB RAM minimum
-- Ports 5051, 5434, 6379 available
-
-### Steps
+#### Step 1: Clone & Install
 
 ```bash
 git clone https://github.com/Jahanzaib211/forge-studio.git
 cd forge-studio
-cp .env.example .env  # edit with your values
+CI=true pnpm install --no-frozen-lockfile
+```
+
+#### Step 2: Configure Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```env
+DATABASE_URL=postgresql://litellm_user:litellm_password_123@localhost:5434/forge_studio
+REDIS_URL=redis://localhost:6379/1
+PORT=5051
+NODE_ENV=development
+JWT_SECRET=<generate-a-strong-secret>
+ALLOWED_ORIGINS=https://your-domain.com
+```
+
+#### Step 3: Setup Database
+
+```bash
+npx drizzle-kit push
+npx tsx server/seed.ts
+```
+
+#### Step 4: Install systemd Services
+
+```bash
+sudo bash scripts/install-systemd.sh
+```
+
+This creates 3 services:
+- `forge-postgres.service` — Ensures PostgreSQL container is running
+- `forge-redis.service` — Ensures Redis container is running
+- `forge-studio.service` — Runs the Forge Studio server
+
+#### Step 5: Start Services
+
+```bash
+sudo systemctl start forge-postgres forge-redis forge-studio
+```
+
+#### Step 6: Enable on Boot
+
+```bash
+sudo systemctl enable forge-postgres forge-redis forge-studio
+```
+
+#### Verify
+
+```bash
+# Check all services
+sudo systemctl status forge-postgres forge-redis forge-studio
+
+# Check health
+curl http://localhost:5051/health
+
+# View logs
+sudo journalctl -u forge-studio -f
+```
+
+### Option 2: Docker Compose
+
+For full containerized deployment:
+
+```bash
 docker compose up -d
-docker compose exec app pnpm tsx server/seed.ts
 ```
 
-Open http://localhost:5051/
+This starts: PostgreSQL, Redis, Forge Studio, Nginx (optional).
 
-### Services
+### Option 3: PM2
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| app | 5051 | Forge Studio application |
-| postgres | 5434 | PostgreSQL database |
-| redis | 6379 | Redis cache |
-| nginx | 80 | Reverse proxy |
-
-### Profiles
+For process management without systemd:
 
 ```bash
-# With Ollama for local models
-docker compose --profile with-ollama up -d
-```
-
----
-
-## Option B: Manual Setup
-
-### Prerequisites
-- Node.js 18+
-- pnpm
-- PostgreSQL 17+
-- Redis 7+
-
-### Steps
-
-```bash
-git clone https://github.com/Jahanzaib211/forge-studio.git
-cd forge-studio
-pnpm install
-pnpm tsx server/seed.ts
-pnpm dev
-```
-
-Open http://localhost:5051/
-
----
-
-## Production Deployment
-
-### 1. Build
-
-```bash
-pnpm build
-```
-
-This produces:
-- `dist/index.js` — bundled server (esbuild)
-- `dist/public/` — frontend build (Vite)
-
-### 2. PM2 Process Manager
-
-```bash
-npm install -g pm2
-
-# Start in production mode
-pm2 start ecosystem.production.cjs
-
-# Save process list (survives reboots)
+pm2 start ecosystem.config.cjs
 pm2 save
+pm2 startup
 ```
 
-### 3. Systemd Auto-Start (Reboot-Proof)
+## Nginx Reverse Proxy
+
+### Basic Config
+
+```nginx
+server {
+    listen 80;
+    server_name forge.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:5051;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### SSL with Let's Encrypt
 
 ```bash
-# One-time setup (needs sudo)
-sudo env PATH=$PATH pm2 startup systemd -u $USER --hp $HOME
-
-# Save current process list
-pm2 save
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d forge.yourdomain.com
 ```
 
-### 4. Optional Services
+## Cloudflare Tunnel
 
-Edit `services.conf` to enable/disable optional services:
-
-```ini
-litellm-proxy=true
-qdrant=true
-mcp-sse=true
-mcp-gateway-docker=true
-ai-lab-dashboard=true
-```
-
-Start them:
-```bash
-pm2 start ecosystem.services.cjs
-pm2 save
-```
-
-### 5. Nginx Reverse Proxy
-
-```bash
-sudo cp nginx/forge-studio.conf /etc/nginx/sites-available/forge-studio
-sudo ln -sf /etc/nginx/sites-available/forge-studio /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-### 6. Cloudflare Tunnel (Remote Access)
+For remote access without opening ports:
 
 ```bash
 # Install cloudflared
-curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
 chmod +x /usr/local/bin/cloudflared
 
-# Authenticate
-cloudflared tunnel login
-
-# Create and configure
+# Create tunnel
 cloudflared tunnel create forge-studio
-bash scripts/setup-cloudflare-tunnel.sh
 
-# Start via PM2
-pm2 start cloudflared --name cloudflared -- tunnel run forge-studio
-pm2 save
+# Configure
+cat > ~/.cloudflared/config.yml << EOF
+tunnel: <tunnel-id>
+credentials-file: /root/.cloudflared/<tunnel-id>.json
+ingress:
+  - hostname: forge.yourdomain.com
+    service: http://localhost:5051
+  - service: http_status:404
+EOF
+
+# Run
+cloudflared tunnel run forge-studio
 ```
 
-Cloudflare Dashboard settings:
-- SSL/TLS → **Full (Strict)**
-- Always Use HTTPS → **ON**
-- HSTS → **ON**
-- Bot Fight Mode → **ON**
-- WAF → **ON**
-- Security Level → **High**
+## Health Check Cron
 
----
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `REDIS_URL` | Yes | — | Redis connection string |
-| `PORT` | No | 5051 | Server port |
-| `NODE_ENV` | No | development | `development` or `production` |
-| `JWT_SECRET` | Yes | — | Random string for session signing |
-| `LITELLM_URL` | No | — | LiteLLM proxy URL (optional) |
-| `LITELLM_API_KEY` | No | — | LiteLLM API key (optional) |
-| `ALLOWED_ORIGINS` | No | — | Comma-separated CORS origins |
-
----
-
-## Backup & Restore
-
-### Backup
+A healthcheck runs every 2 minutes:
 
 ```bash
-bash scripts/backup.sh
+# Check cron is installed
+crontab -l | grep healthcheck
+
+# View healthcheck logs
+cat logs/healthcheck.log
 ```
 
-Backs up PostgreSQL and Redis to `/var/backups/forge-studio/`.
+If the server goes down, the cron automatically restarts it via `systemctl restart forge-studio`.
 
-### Automated Backup (cron)
+## Backup Strategy
+
+### Database Backup
 
 ```bash
-crontab -e
-# Add: 0 2 * * * /home/jahanzaib/forge-studio/scripts/backup-cron.sh
+# Manual backup
+docker exec litellm_postgres pg_dump -U litellm_user forge_studio > backup_$(date +%Y%m%d).sql
+
+# Automated (add to cron)
+0 2 * * * docker exec litellm_postgres pg_dump -U litellm_user forge_studio | gzip > /backups/forge_$(date +\%Y\%m\%d).sql.gz
 ```
 
 ### Restore
 
 ```bash
-bash scripts/restore.sh /var/backups/forge-studio/forge_studio_YYYYMMDD_HHMMSS.sql.gz
+gunzip < backup_20250101.sql.gz | docker exec -i litellm_postgres psql -U litellm_user forge_studio
 ```
 
----
+## Monitoring
 
-## Architecture
+### Service Status
 
-```
-Internet → Cloudflare (SSL/CDN/WAF)
-  └─ Cloudflare Tunnel → cloudflared
-       └─ nginx (:8080)
-            └─ forge-studio (:5051)
-                 ├─ PostgreSQL (:5432)
-                 ├─ Redis (:6379) — Docker
-                 ├─ Qdrant (:6333)
-                 ├─ LiteLLM Proxy (:5050)
-                 └─ Local Model (one at a time)
-                      ├─ Qwen 14B MoE (:8082)
-                      ├─ DeepSeek V2 Lite (:8085)
-                      └─ Qwopus 9B MTP (:8083)
+```bash
+sudo systemctl status forge-studio
+sudo journalctl -u forge-studio --since "1 hour ago"
 ```
 
----
+### Health Endpoint
+
+```bash
+curl http://localhost:5051/health
+# Returns: {"status":"healthy","version":"3.0.0","checks":{"postgres":...,"redis":...}}
+```
+
+### Log Files
+
+| Log | Location |
+|-----|----------|
+| systemd journal | `sudo journalctl -u forge-studio` |
+| Healthcheck | `logs/healthcheck.log` |
+| Dev server | stdout (journal captures it) |
 
 ## Troubleshooting
 
-### forge-studio won't start
+### Server won't start
 
 ```bash
-# Check logs
-pm2 logs forge-studio --lines 50
+# Check if port 5051 is in use
+lsof -i:5051
 
-# Check dependencies
-bash scripts/ensure-deps.sh
+# Check database connection
+docker exec litellm_postgres pg_isready
 
-# Restart
-pm2 restart forge-studio
+# Check Redis
+docker exec futureagi-redis-1 redis-cli ping
+
+# View detailed logs
+sudo journalctl -u forge-studio -n 50
 ```
 
-### GPU out of memory
+### Database connection refused
 
 ```bash
-# Check VRAM usage
-nvidia-smi
+# Ensure PostgreSQL container is running
+docker ps | grep postgres
 
-# Go to Local Models page and switch to a smaller model
-# Or stop other GPU processes
+# Restart if needed
+docker restart litellm_postgres
 ```
 
-### Redis connection refused
+### Build fails
 
 ```bash
-# Check Docker container
-docker ps | grep redis
-
-# Start it
-docker start futureagi-redis-1
+# Clean and rebuild
+rm -rf dist node_modules
+CI=true pnpm install --no-frozen-lockfile
+pnpm build
 ```
 
-### PostgreSQL connection refused
+## Production Checklist
 
-```bash
-# Check status
-pg_isready
-
-# Start
-sudo systemctl start postgresql
-```
+- [ ] `.env` configured with strong `JWT_SECRET`
+- [ ] `ALLOWED_ORIGINS` set to your domain
+- [ ] PostgreSQL running and accessible
+- [ ] Redis running and accessible
+- [ ] Database schema pushed (`npx drizzle-kit push`)
+- [ ] Database seeded (`npx tsx server/seed.ts`)
+- [ ] systemd services installed and enabled
+- [ ] Nginx reverse proxy configured (if using)
+- [ ] SSL certificate installed (if public-facing)
+- [ ] Healthcheck cron installed
+- [ ] Backup cron configured
+- [ ] Firewall rules configured (only 80/443 open)

@@ -1,4 +1,4 @@
-# High Availability Guide for FreeAPI Forge
+# High Availability Guide for Forge Studio
 
 ## 1. Architecture Overview
 
