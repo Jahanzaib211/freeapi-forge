@@ -49,6 +49,7 @@ import SystemMonitor from "./pages/SystemMonitor";
 import ProcessManager from "./pages/ProcessManager";
 import LLMDiscoverer from "./pages/LLMDiscoverer";
 import ForgeBuilder from "./pages/ForgeBuilder";
+import BlockBuilder from "./pages/BlockBuilder";
 import CustomProviders from "./pages/CustomProviders";
 import HuggingFace from "./pages/HuggingFace";
 import PromptLibrary from "./pages/PromptLibrary";
@@ -58,6 +59,9 @@ import Webhooks from "./pages/Webhooks";
 import AILabHub from "./pages/AILabHub";
 import LocalModelManager from "./pages/LocalModelManager";
 import DeploymentMonitor from "./pages/DeploymentMonitor";
+import AILab from "./pages/AILab";
+import ForgeBrain from "./pages/ForgeBrain";
+import GithubExplorer from "./pages/GithubExplorer";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -84,19 +88,23 @@ function Router() {
       <Route path="/chat" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/chat/:id" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/tenant-dashboard" component={() => <ProtectedRoute><DashboardLayout><TenantDashboard /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agents" component={() => <ProtectedRoute><DashboardLayout><AgentBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agents" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
       <Route path="/agents/:id" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
       <Route path="/agent-activity" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
       <Route path="/mcp-explorer" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
       <Route path="/my-mcps" component={() => <ProtectedRoute><DashboardLayout><MyMcps /></DashboardLayout></ProtectedRoute>} />
       <Route path="/mcp/:slug" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/workflows" component={() => <ProtectedRoute><DashboardLayout><WorkflowEditor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/workflows" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
       <Route path="/workflows/:id" component={() => <ProtectedRoute><DashboardLayout><WorkflowEditor /></DashboardLayout></ProtectedRoute>} />
       <Route path="/workflow-monitor" component={() => <ProtectedRoute><DashboardLayout><WorkflowMonitor /></DashboardLayout></ProtectedRoute>} />
       <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
       <Route path="/deployment-monitor" component={() => <ProtectedRoute><DashboardLayout><DeploymentMonitor /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/ai-lab" component={() => <ProtectedRoute><DashboardLayout><AILab /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/forge-builder" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/forge-brain" component={() => <ProtectedRoute><DashboardLayout><ForgeBrain /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/github-explorer" component={() => <ProtectedRoute><DashboardLayout><GithubExplorer /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />
       <Route path="/explorer" component={() => <ProtectedRoute><DashboardLayout><ModelExplorer /></DashboardLayout></ProtectedRoute>} />
       <Route path="/models" component={() => <ProtectedRoute><DashboardLayout><ModelManager /></DashboardLayout></ProtectedRoute>} />
@@ -125,8 +133,8 @@ function Router() {
       <Route path="/api-reference" component={() => <ProtectedRoute><DashboardLayout><APIReference /></DashboardLayout></ProtectedRoute>} />
       <Route path="/ai-hub" component={() => <ProtectedRoute><DashboardLayout><AIHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/settings" component={() => <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agentic" component={() => <ProtectedRoute><DashboardLayout><Agentic /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/builder" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agentic" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/builder" component={() => <ProtectedRoute><DashboardLayout><BlockBuilder /></DashboardLayout></ProtectedRoute>} />
       <Route path="/custom-providers" component={() => <ProtectedRoute><DashboardLayout><CustomProviders /></DashboardLayout></ProtectedRoute>} />
       <Route path="/huggingface" component={() => <ProtectedRoute><DashboardLayout><HuggingFace /></DashboardLayout></ProtectedRoute>} />
       <Route path="/prompts" component={() => <ProtectedRoute><DashboardLayout><PromptLibrary /></DashboardLayout></ProtectedRoute>} />

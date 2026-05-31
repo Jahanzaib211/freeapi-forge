@@ -1,944 +1,553 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import SandboxPanel from "@/components/hub/SandboxPanel";
-import {
-  Blocks,
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-  Plus,
-  Save,
-  Upload,
-  Download,
-  Rocket,
-  Play,
-  Settings2,
-  FileJson,
-  Copy,
-  Check,
-  Loader2,
-  Sparkles,
-  Cpu,
-  Wrench,
-  Puzzle,
-  Server,
-  MessageSquare,
-  Code,
-  Workflow,
-  FileInput,
-  FileOutput,
-  Layers,
-  GripVertical,
-  X,
-  TestTube,
-  Terminal,
-  Eye,
-  RefreshCw,
-} from "lucide-react";
-import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
+import { Bot, Workflow, Blocks } from "lucide-react";
+import BlockBuilder from "./BlockBuilder";
 
-type BlockType =
-  | "system-prompt"
-  | "model-selection"
-  | "tool-config"
-  | "schema"
-  | "workflow"
-  | "code-block"
-  | "test";
-
-interface WorkflowBlock {
-  id: string;
-  type: BlockType;
-  title: string;
-  config: Record<string, any>;
-}
-
-const BLOCK_TYPES: { type: BlockType; label: string; icon: any; description: string }[] = [
-  { type: "system-prompt", label: "System Prompt", icon: MessageSquare, description: "Define the AI's behavior and role" },
-  { type: "model-selection", label: "Model Selection", icon: Cpu, description: "Choose which LLM to use" },
-  { type: "tool-config", label: "Tool Configuration", icon: Wrench, description: "Select tools and MCP servers" },
-  { type: "schema", label: "Input/Output Schema", icon: FileJson, description: "Define data formats" },
-  { type: "workflow", label: "Workflow Steps", icon: Workflow, description: "Ordered task steps" },
-  { type: "code-block", label: "Code Block", icon: Code, description: "Embedded code snippet" },
-  { type: "test", label: "Test Panel", icon: TestTube, description: "Run test queries" },
-];
-
-interface ProjectState {
+interface Agent {
+  id: number;
   name: string;
-  blocks: WorkflowBlock[];
-  selectedBlockId: string | null;
-  selectedModel: string;
-  selectedTools: string[];
-  selectedMcpServers: string[];
+  type: string;
+  description: string | null;
+  status: string;
+  model: string;
+  tools: string[] | null;
+  totalRuns: number;
+  lastRunAt: string | null;
   createdAt: string;
 }
 
-function generateId(): string {
-  return `block-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+interface WorkflowDef {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  stepCount: number;
+  lastRunAt: string | null;
+  createdAt: string;
 }
 
-function BlockConfigPanel({
-  block,
-  models,
-  mcpServers,
-  skills,
-  onUpdate,
-}: {
-  block: WorkflowBlock;
-  models: any[];
-  mcpServers: any[];
-  skills: any[];
-  onUpdate: (config: Record<string, any>) => void;
-}) {
-  if (block.type === "system-prompt") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">System Prompt</label>
-        <Textarea
-          value={block.config.prompt || ""}
-          onChange={(e) => onUpdate({ ...block.config, prompt: e.target.value })}
-          placeholder="You are a helpful assistant that..."
-          className="bg-slate-700/50 border-slate-600 text-white min-h-[120px] text-sm font-mono"
-        />
-      </div>
-    );
-  }
+const AGENT_TEMPLATES = [
+  { name: "System Guardian", type: "monitor", desc: "Watches all services, auto-heals, alerts on failure", prompt: "You are a system guardian. Monitor all services and auto-heal when possible.", triggers: "cron", schedule: "*/30 * * * * *", tools: "health_check,notification", model: "fast-8b" },
+  { name: "Security Sentinel", type: "monitor", desc: "Watches for anomalies, brute force, unauthorized access", prompt: "You monitor security. Detect anomalies and alert.", triggers: "cron+event", schedule: "*/60 * * * * *", tools: "audit_log_reader,rate_limit_check,notification", model: "fast-8b" },
+  { name: "Document Processor", type: "workflow", desc: "Watches for uploads, chunks, embeds, indexes", prompt: "You process uploaded documents. Chunk, index, and notify.", triggers: "event", schedule: "", tools: "rag_search,notification", model: "fast-8b" },
+  { name: "Cost Optimizer", type: "workflow", desc: "Monitors LLM spend, switches to cheaper providers", prompt: "Optimize LLM costs by switching providers.", triggers: "cron+event", schedule: "*/300 * * * * *", tools: "budget_check,notification", model: "fast-8b" },
+  { name: "Chat Bot", type: "chat", desc: "General AI assistant with RAG knowledge", prompt: "You are a helpful AI assistant.", triggers: "manual", schedule: "", tools: "rag_search,llm,list_conversations", model: "fast-8b" },
+  { name: "Code Reviewer", type: "workflow", desc: "Reviews code on webhook trigger", prompt: "You review code changes and suggest improvements.", triggers: "event", schedule: "", tools: "llm,skill", model: "coding" },
+  { name: "Usage Reporter", type: "data", desc: "Generates daily/weekly usage reports", prompt: "Generate usage reports from system data.", triggers: "cron", schedule: "*/3600 * * * * *", tools: "list_conversations,notification", model: "fast-8b" },
+  { name: "Model Health Watcher", type: "monitor", desc: "Pings all models, auto-disables failing ones", prompt: "Monitor model health and disable failing models.", triggers: "cron", schedule: "*/120 * * * * *", tools: "health_check,list_models,notification", model: "fast-8b" },
+  { name: "Backup Agent", type: "workflow", desc: "Automated database backups", prompt: "Automate database backup process.", triggers: "cron", schedule: "*/86400 * * * * *", tools: "db_query,notification", model: "fast-8b" },
+  { name: "Compliance Scanner", type: "workflow", desc: "Scans conversations for policy violations", prompt: "Scan conversations for policy violations.", triggers: "cron", schedule: "*/3600 * * * * *", tools: "audit_log_reader,rag_search,notification", model: "fast-8b" },
+  { name: "Fleet Manager", type: "orchestrator", desc: "Manages all agents, ensures no conflicts", prompt: "Manage the agent fleet. Coordinate and resolve conflicts.", triggers: "cron", schedule: "*/300 * * * * *", tools: "health_check,notification", model: "fast-8b" },
+  { name: "Onboarding Buddy", type: "chat", desc: "Guides new team members through setup", prompt: "Welcome new users. Guide them through setup.", triggers: "event+manual", schedule: "", tools: "llm,rag_search", model: "fast-8b" },
+];
 
-  if (block.type === "model-selection") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">Model</label>
-        <Select
-          value={block.config.model || ""}
-          onValueChange={(v) => onUpdate({ ...block.config, model: v })}
-        >
-          <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-            <SelectValue placeholder="Select a model" />
-          </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
-            {models.map((m: any) => (
-              <SelectItem key={m.name || m.id} value={m.name || m.id} className="text-white">
-                {m.name || m.id}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] text-slate-500 block mb-1">Temperature</label>
-            <Input
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              value={block.config.temperature ?? "0.7"}
-              onChange={(e) => onUpdate({ ...block.config, temperature: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white text-xs"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] text-slate-500 block mb-1">Max Tokens</label>
-            <Input
-              type="number"
-              min="1"
-              max="128000"
-              value={block.config.maxTokens ?? "4096"}
-              onChange={(e) => onUpdate({ ...block.config, maxTokens: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white text-xs"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (block.type === "tool-config") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">MCP Servers</label>
-        <div className="space-y-1 max-h-[120px] overflow-y-auto">
-          {mcpServers.map((s: any) => (
-            <label
-              key={s.id}
-              className="flex items-center gap-2 p-2 rounded hover:bg-slate-700/30 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={(block.config.mcpServerIds || []).includes(s.id)}
-                onChange={(e) => {
-                  const ids = block.config.mcpServerIds || [];
-                  const next = e.target.checked
-                    ? [...ids, s.id]
-                    : ids.filter((id: string) => id !== s.id);
-                  onUpdate({ ...block.config, mcpServerIds: next });
-                }}
-                className="rounded border-slate-600"
-              />
-              <span className="text-xs text-white">{s.name}</span>
-              <Badge className="ml-auto text-[9px] bg-slate-700 text-slate-300 border-slate-600">
-                {s.toolCount || 0}
-              </Badge>
-            </label>
-          ))}
-          {mcpServers.length === 0 && (
-            <p className="text-xs text-slate-500 italic">No MCP servers configured</p>
-          )}
-        </div>
-        <Separator className="bg-slate-700/50" />
-        <label className="text-xs text-slate-400 block">Skills</label>
-        <div className="space-y-1 max-h-[120px] overflow-y-auto">
-          {skills.map((s: any) => (
-            <label
-              key={s.id}
-              className="flex items-center gap-2 p-2 rounded hover:bg-slate-700/30 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={(block.config.skillIds || []).includes(s.id)}
-                onChange={(e) => {
-                  const ids = block.config.skillIds || [];
-                  const next = e.target.checked
-                    ? [...ids, s.id]
-                    : ids.filter((id: string) => id !== s.id);
-                  onUpdate({ ...block.config, skillIds: next });
-                }}
-                className="rounded border-slate-600"
-              />
-              <span className="text-xs text-white">{s.name}</span>
-            </label>
-          ))}
-          {skills.length === 0 && (
-            <p className="text-xs text-slate-500 italic">No skills available</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (block.type === "schema") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">Input Schema (JSON)</label>
-        <Textarea
-          value={block.config.inputSchema || '{\n  "query": "string"\n}'}
-          onChange={(e) => onUpdate({ ...block.config, inputSchema: e.target.value })}
-          className="bg-slate-700/50 border-slate-600 text-white min-h-[80px] text-xs font-mono"
-        />
-        <label className="text-xs text-slate-400 block">Output Schema (JSON)</label>
-        <Textarea
-          value={block.config.outputSchema || '{\n  "result": "string"\n}'}
-          onChange={(e) => onUpdate({ ...block.config, outputSchema: e.target.value })}
-          className="bg-slate-700/50 border-slate-600 text-white min-h-[80px] text-xs font-mono"
-        />
-      </div>
-    );
-  }
-
-  if (block.type === "workflow") {
-    const steps: string[] = block.config.steps || ["Step 1"];
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">Workflow Steps</label>
-        <div className="space-y-2">
-          {steps.map((step, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-[10px] text-slate-500 w-5 text-right">{i + 1}.</span>
-              <Input
-                value={step}
-                onChange={(e) => {
-                  const next = [...steps];
-                  next[i] = e.target.value;
-                  onUpdate({ ...block.config, steps: next });
-                }}
-                className="bg-slate-700/50 border-slate-600 text-white text-xs flex-1"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-slate-500 hover:text-red-400"
-                onClick={() => {
-                  const next = steps.filter((_, idx) => idx !== i);
-                  onUpdate({ ...block.config, steps: next });
-                }}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-blue-400 hover:text-blue-300 text-xs"
-          onClick={() => onUpdate({ ...block.config, steps: [...steps, `Step ${steps.length + 1}`] })}
-        >
-          <Plus className="w-3 h-3 mr-1" /> Add Step
-        </Button>
-      </div>
-    );
-  }
-
-  if (block.type === "code-block") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">Language</label>
-        <Select
-          value={block.config.language || "python"}
-          onValueChange={(v) => onUpdate({ ...block.config, language: v })}
-        >
-          <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
-            {["python", "javascript", "typescript", "bash", "json"].map((l) => (
-              <SelectItem key={l} value={l} className="text-white">{l}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <label className="text-xs text-slate-400 block">Code</label>
-        <Textarea
-          value={block.config.code || ""}
-          onChange={(e) => onUpdate({ ...block.config, code: e.target.value })}
-          placeholder="# Your code here"
-          className="bg-slate-700/50 border-slate-600 text-white min-h-[120px] text-xs font-mono"
-        />
-      </div>
-    );
-  }
-
-  if (block.type === "test") {
-    return (
-      <div className="space-y-3">
-        <label className="text-xs text-slate-400 block">Test Query</label>
-        <Textarea
-          value={block.config.query || ""}
-          onChange={(e) => onUpdate({ ...block.config, query: e.target.value })}
-          placeholder="Enter a test query..."
-          className="bg-slate-700/50 border-slate-600 text-white min-h-[80px] text-sm"
-        />
-        <p className="text-[10px] text-slate-500">
-          This block configures the test panel at the bottom.
-        </p>
-      </div>
-    );
-  }
-
-  return <p className="text-xs text-slate-500">No configuration available.</p>;
+function api(token: string | null) {
+  return {
+    query: async (path: string, input?: Record<string, any>) => {
+      const params = input
+        ? `?input=${encodeURIComponent(JSON.stringify({ json: input }))}`
+        : "?input=%7B%7D";
+      const res = await fetch(`/api/trpc/${path}${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data;
+    },
+    mutate: async (path: string, input: Record<string, any>) => {
+      const res = await fetch(`/api/trpc/${path}?batch=1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify([{ json: input }]),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data;
+    },
+  };
 }
+
+const typeIcon: Record<string, string> = { chat: "\uD83D\uDCAC", workflow: "\u26A1", monitor: "\uD83D\uDC41\uFE0F", data: "\uD83D\uDCCA", orchestrator: "\uD83E\uDDE0" };
+const statusColor: Record<string, string> = { active: "bg-green-500", paused: "bg-yellow-500", error: "bg-red-500", creating: "bg-blue-500" };
 
 export default function ForgeBuilder() {
-  const [project, setProject] = useState<ProjectState>({
-    name: "Untitled Project",
-    blocks: [
-      { id: generateId(), type: "system-prompt", title: "System Prompt", config: { prompt: "" } },
-      { id: generateId(), type: "model-selection", title: "Model Selection", config: { model: "", temperature: "0.7", maxTokens: "4096" } },
-    ],
-    selectedBlockId: null,
-    selectedModel: "",
-    selectedTools: [],
-    selectedMcpServers: [],
-    createdAt: new Date().toISOString(),
+  const { getToken } = useAuth();
+  const token = getToken();
+
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const [workflows, setWorkflows] = useState<WorkflowDef[]>([]);
+  const [workflowsLoading, setWorkflowsLoading] = useState(true);
+
+  const [form, setForm] = useState({
+    name: "",
+    type: "monitor",
+    description: "",
+    systemPrompt: "",
+    model: "fast-8b",
+    tools: "",
+    triggers: "manual",
+    schedule: "",
+    maxSteps: 10,
+    maxRuntime: 60,
+    maxBudget: 0.5,
+    requireApproval: "",
   });
-
-  const [testQuery, setTestQuery] = useState("");
-  const [testOutput, setTestOutput] = useState("");
-  const [testRunning, setTestRunning] = useState(false);
-  const [sandboxOpen, setSandboxOpen] = useState(false);
-  const [sandboxCode, setSandboxCode] = useState("");
-  const [copiedJson, setCopiedJson] = useState(false);
-  const outputRef = useRef<HTMLTextAreaElement>(null);
-
-  const modelsQuery = trpc.models.list.useQuery(undefined);
-  const mcpQuery = trpc.mcp.list.useQuery(undefined);
-  const skillsQuery = trpc.skills.list.useQuery(undefined);
-  const createAgent = trpc.agents.create.useMutation({
-    onSuccess: () => {
-      toast.success("Agent deployed successfully!");
-    },
-    onError: (err) => {
-      toast.error(`Deploy failed: ${err.message}`);
-    },
-  });
-
-  const chatComplete = trpc.chat.complete.useMutation({
-    onError: (err) => {
-      toast.error(`Test failed: ${err.message}`);
-      setTestRunning(false);
-    },
-  });
-
-  const models = modelsQuery.data ?? [];
-  const mcpServers = mcpQuery.data ?? [];
-  const skills = skillsQuery.data ?? [];
-
-  const selectedBlock = project.blocks.find((b) => b.id === project.selectedBlockId);
-
-  const addBlock = (type: BlockType) => {
-    const meta = BLOCK_TYPES.find((b) => b.type === type)!;
-    const newBlock: WorkflowBlock = {
-      id: generateId(),
-      type,
-      title: meta.label,
-      config: {},
-    };
-    setProject((prev) => ({
-      ...prev,
-      blocks: [...prev.blocks, newBlock],
-      selectedBlockId: newBlock.id,
-    }));
-  };
-
-  const removeBlock = (id: string) => {
-    setProject((prev) => ({
-      ...prev,
-      blocks: prev.blocks.filter((b) => b.id !== id),
-      selectedBlockId: prev.selectedBlockId === id ? null : prev.selectedBlockId,
-    }));
-  };
-
-  const moveBlock = (id: string, direction: "up" | "down") => {
-    setProject((prev) => {
-      const idx = prev.blocks.findIndex((b) => b.id === id);
-      if (idx === -1) return prev;
-      const newIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= prev.blocks.length) return prev;
-      const next = [...prev.blocks];
-      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
-      return { ...prev, blocks: next };
-    });
-  };
-
-  const updateBlockConfig = (id: string, config: Record<string, any>) => {
-    setProject((prev) => ({
-      ...prev,
-      blocks: prev.blocks.map((b) => (b.id === id ? { ...b, config } : b)),
-    }));
-  };
-
-  const buildConfig = useCallback(() => {
-    const systemPrompt = project.blocks.find((b) => b.type === "system-prompt")?.config.prompt || "";
-    const modelBlock = project.blocks.find((b) => b.type === "model-selection");
-    const toolBlock = project.blocks.find((b) => b.type === "tool-config");
-    const schemaBlock = project.blocks.find((b) => b.type === "schema");
-    const workflowBlock = project.blocks.find((b) => b.type === "workflow");
-    const codeBlocks = project.blocks.filter((b) => b.type === "code-block");
-
-    return {
-      name: project.name,
-      systemPrompt,
-      model: modelBlock?.config.model || "",
-      temperature: parseFloat(modelBlock?.config.temperature || "0.7"),
-      maxTokens: parseInt(modelBlock?.config.maxTokens || "4096"),
-      mcpServerIds: toolBlock?.config.mcpServerIds || [],
-      skillIds: toolBlock?.config.skillIds || [],
-      inputSchema: schemaBlock?.config.inputSchema || "",
-      outputSchema: schemaBlock?.config.outputSchema || "",
-      workflowSteps: workflowBlock?.config.steps || [],
-      codeBlocks: codeBlocks.map((b) => ({ language: b.config.language, code: b.config.code })),
-    };
-  }, [project]);
-
-  const handleExport = () => {
-    const config = buildConfig();
-    const json = JSON.stringify(config, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${project.name.replace(/\s+/g, "-").toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Configuration exported");
-  };
-
-  const handleCopyJson = () => {
-    const config = buildConfig();
-    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2000);
-  };
-
-  const handleSave = () => {
-    const config = buildConfig();
-    const saved = JSON.parse(localStorage.getItem("forge-projects") || "[]");
-    const existingIdx = saved.findIndex((p: any) => p.name === project.name);
-    if (existingIdx >= 0) {
-      saved[existingIdx] = { ...config, savedAt: new Date().toISOString() };
-    } else {
-      saved.push({ ...config, savedAt: new Date().toISOString() });
-    }
-    localStorage.setItem("forge-projects", JSON.stringify(saved));
-    toast.success("Project saved");
-  };
-
-  const handleLoad = () => {
-    const saved = JSON.parse(localStorage.getItem("forge-projects") || "[]");
-    if (saved.length === 0) {
-      toast.info("No saved projects found");
-      return;
-    }
-    const latest = saved[saved.length - 1];
-    const blocks: WorkflowBlock[] = [];
-    if (latest.systemPrompt) {
-      blocks.push({ id: generateId(), type: "system-prompt", title: "System Prompt", config: { prompt: latest.systemPrompt } });
-    }
-    blocks.push({
-      id: generateId(),
-      type: "model-selection",
-      title: "Model Selection",
-      config: { model: latest.model || "", temperature: String(latest.temperature || 0.7), maxTokens: String(latest.maxTokens || 4096) },
-    });
-    if (latest.mcpServerIds?.length || latest.skillIds?.length) {
-      blocks.push({
-        id: generateId(),
-        type: "tool-config",
-        title: "Tool Configuration",
-        config: { mcpServerIds: latest.mcpServerIds || [], skillIds: latest.skillIds || [] },
-      });
-    }
-    if (latest.workflowSteps?.length) {
-      blocks.push({ id: generateId(), type: "workflow", title: "Workflow Steps", config: { steps: latest.workflowSteps } });
-    }
-    setProject((prev) => ({ ...prev, name: latest.name || "Loaded Project", blocks }));
-    toast.success("Project loaded");
-  };
-
-  const handleDeploy = () => {
-    const config = buildConfig();
-    createAgent.mutate({
-      name: config.name,
-      systemPrompt: config.systemPrompt,
-      model: config.model,
-      tools: [],
-      mcpServerIds: config.mcpServerIds,
-      budgetUsd: 10,
-    });
-  };
-
-  const handleTestRun = async () => {
-    const query = testQuery || project.blocks.find((b) => b.type === "test")?.config.query || "";
-    if (!query.trim()) {
-      toast.error("Enter a test query first");
-      return;
-    }
-    setTestRunning(true);
-    setTestOutput("");
-    const config = buildConfig();
-
-    try {
-      const systemPrompt = config.systemPrompt || "You are a helpful assistant.";
-      const response = await fetch("/api/stream/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: query },
-          ],
-          model: config.model || undefined,
-          temperature: config.temperature,
-          maxTokens: config.maxTokens,
-        }),
-      });
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) throw new Error("No reader");
-
-      let fullContent = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        for (const line of chunk.split("\n")) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content || "";
-              if (content) {
-                fullContent += content;
-                setTestOutput(fullContent);
-              }
-            } catch {}
-          }
-        }
-      }
-
-      if (!fullContent) {
-        setTestOutput("No response received from the model.");
-      }
-    } catch (err: any) {
-      setTestOutput(`Error: ${err.message || "Failed to reach LLM endpoint"}`);
-    } finally {
-      setTestRunning(false);
-    }
-  };
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   useEffect(() => {
-    if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
-  }, [testOutput]);
+    if (!token) return;
+    loadAgents();
+    loadWorkflows();
+  }, [token]);
 
-  const getBlockIcon = (type: BlockType) => {
-    return BLOCK_TYPES.find((b) => b.type === type)?.icon || Blocks;
-  };
+  async function loadAgents() {
+    setAgentsLoading(true);
+    try {
+      const data = await api(token).query("agents.list");
+      setAgents(data?.result?.data?.json || []);
+    } catch {}
+    setAgentsLoading(false);
+  }
+
+  async function loadWorkflows() {
+    setWorkflowsLoading(true);
+    try {
+      const data = await api(token).query("workflowRouter.list");
+      setWorkflows(data?.result?.data?.json || []);
+    } catch {}
+    setWorkflowsLoading(false);
+  }
+
+  function applyTemplate(tpl: typeof AGENT_TEMPLATES[0]) {
+    const triggerType = tpl.triggers.includes("+") ? tpl.triggers.split("+") : [tpl.triggers];
+    const hasCron = triggerType.includes("cron");
+    const hasEvent = triggerType.includes("event");
+    setForm({
+      name: tpl.name,
+      type: tpl.type,
+      description: tpl.desc,
+      systemPrompt: tpl.prompt,
+      model: tpl.model,
+      tools: tpl.tools,
+      triggers: hasCron && hasEvent ? "cron+event" : hasCron ? "cron" : hasEvent ? "event" : "manual",
+      schedule: tpl.schedule,
+      maxSteps: 10,
+      maxRuntime: 60,
+      maxBudget: 0.5,
+      requireApproval: "",
+    });
+    setShowTemplates(false);
+    setShowCreateForm(true);
+  }
+
+  async function handleCreateAgent() {
+    if (!form.name) return;
+    setCreating(true);
+    setCreateError("");
+
+    const isCron = form.triggers.includes("cron");
+    const isEvent = form.triggers.includes("event");
+    const triggers: any[] = [];
+    if (isCron) triggers.push({ type: "cron", schedule: form.schedule || "*/300 * * * * *" });
+    if (isEvent) triggers.push({ type: "event", events: ["user.created", "chat.started"] });
+    if (form.triggers === "manual" || (!isCron && !isEvent)) triggers.push({ type: "manual" });
+
+    const payload = {
+      name: form.name,
+      type: form.type,
+      description: form.description || undefined,
+      systemPrompt: form.systemPrompt || undefined,
+      model: form.model,
+      tools: form.tools.split(",").map((t) => t.trim()).filter(Boolean),
+      config: {
+        triggers,
+        llm: { model: form.model, temperature: 0.7, maxTokens: 2048 },
+        memory: { contextWindow: 50, persistentMemory: true },
+        guardrails: {
+          maxSteps: form.maxSteps,
+          maxRuntimeSec: form.maxRuntime,
+          maxBudgetRun: form.maxBudget,
+          requireApproval: form.requireApproval.split(",").map((t) => t.trim()).filter(Boolean),
+          scope: form.tools.split(",").map((t) => t.trim()).filter(Boolean),
+        },
+        systemPrompt: form.systemPrompt || undefined,
+      },
+    };
+
+    try {
+      const data = await api(token).mutate("agentBuilder.create", payload);
+      if (data) {
+        setShowCreateForm(false);
+        resetForm();
+        loadAgents();
+      } else {
+        setCreateError("Failed to create agent.");
+      }
+    } catch {
+      setCreateError("An error occurred.");
+    }
+    setCreating(false);
+  }
+
+  async function handleDeleteAgent(id: number) {
+    try {
+      await api(token).mutate("agentBuilder.delete", { id });
+      loadAgents();
+    } catch {}
+  }
+
+  async function handleRunAgent(id: number) {
+    try {
+      await api(token).mutate("agentBuilder.trigger", { id });
+    } catch {}
+  }
+
+  function resetForm() {
+    setForm({
+      name: "", type: "monitor", description: "", systemPrompt: "", model: "fast-8b",
+      tools: "", triggers: "manual", schedule: "", maxSteps: 10, maxRuntime: 60, maxBudget: 0.5, requireApproval: "",
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col">
-      {/* Header */}
-      <div className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-400" />
-            <h1 className="text-lg font-bold text-white">Forge Builder</h1>
-          </div>
-          <Input
-            value={project.name}
-            onChange={(e) => setProject((prev) => ({ ...prev, name: e.target.value }))}
-            className="bg-transparent border-none text-white text-sm font-medium w-64 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={handleLoad}>
-            <Upload className="w-4 h-4 mr-1" /> Load
-          </Button>
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-1" /> Save
-          </Button>
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={handleExport}>
-            <Download className="w-4 h-4 mr-1" /> Export
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-slate-400 hover:text-white"
-            onClick={handleCopyJson}
-          >
-            {copiedJson ? <Check className="w-4 h-4 mr-1 text-green-400" /> : <Copy className="w-4 h-4 mr-1" />}
-            JSON
-          </Button>
-          <Separator orientation="vertical" className="h-6 bg-slate-700/50 mx-1" />
-          <Button
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={handleDeploy}
-            disabled={createAgent.isPending}
-          >
-            {createAgent.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Rocket className="w-4 h-4 mr-1" />}
-            Deploy
-          </Button>
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={handleTestRun}
-            disabled={testRunning}
-          >
-            {testRunning ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Play className="w-4 h-4 mr-1" />}
-            Test
-          </Button>
-          <Button
-            size="sm"
-            className="bg-cyan-600 hover:bg-cyan-700 text-white"
-            onClick={() => setSandboxOpen(true)}
-          >
-            <Terminal className="w-4 h-4 mr-1" />
-            Sandbox
-          </Button>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">🏗️ Forge Builder</h1>
+        <p className="text-muted-foreground mt-1">Build agents, orchestrate workflows, and compose blocks</p>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Project Navigator */}
-        <div className="w-64 border-r border-slate-700/50 bg-slate-900/30 flex flex-col">
-          <div className="p-3 border-b border-slate-700/30">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Resources</h2>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="p-2 space-y-1">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider px-2 py-1 font-semibold flex items-center gap-1">
-                <Cpu className="w-3 h-3" /> Models ({models.length})
-              </p>
-              {models.map((m: any) => (
-                <div
-                  key={m.name || m.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-700/30 cursor-pointer transition-colors"
-                  onClick={() => {
-                    const modelBlock = project.blocks.find((b) => b.type === "model-selection");
-                    if (modelBlock) {
-                      updateBlockConfig(modelBlock.id, { ...modelBlock.config, model: m.name || m.id });
-                    } else {
-                      addBlock("model-selection");
-                    }
-                  }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span className="truncate">{m.name || m.id}</span>
-                </div>
-              ))}
-              {models.length === 0 && (
-                <p className="text-[10px] text-slate-600 italic px-2">No models loaded</p>
-              )}
+      <Tabs defaultValue="agents" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="agents">
+            <Bot className="w-4 h-4 mr-2" /> Agents
+          </TabsTrigger>
+          <TabsTrigger value="workflows">
+            <Workflow className="w-4 h-4 mr-2" /> Workflows
+          </TabsTrigger>
+          <TabsTrigger value="block-builder">
+            <Blocks className="w-4 h-4 mr-2" /> Block Builder
+          </TabsTrigger>
+        </TabsList>
 
-              <Separator className="bg-slate-700/30 my-2" />
-
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider px-2 py-1 font-semibold flex items-center gap-1">
-                <Server className="w-3 h-3" /> MCP Servers ({mcpServers.length})
-              </p>
-              {mcpServers.map((s: any) => (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-700/30 cursor-pointer transition-colors"
-                >
-                  <div className={`w-1.5 h-1.5 rounded-full ${s.status === "connected" ? "bg-green-500" : "bg-slate-500"}`} />
-                  <span className="truncate">{s.name}</span>
-                  <Badge className="ml-auto text-[8px] bg-slate-700 text-slate-400 border-slate-600">
-                    {s.toolCount || 0}
-                  </Badge>
-                </div>
-              ))}
-              {mcpServers.length === 0 && (
-                <p className="text-[10px] text-slate-600 italic px-2">No MCP servers</p>
-              )}
-
-              <Separator className="bg-slate-700/30 my-2" />
-
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider px-2 py-1 font-semibold flex items-center gap-1">
-                <Puzzle className="w-3 h-3" /> Skills ({skills.length})
-              </p>
-              {skills.map((s: any) => (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-700/30 cursor-pointer transition-colors"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  <span className="truncate">{s.name}</span>
-                </div>
-              ))}
-              {skills.length === 0 && (
-                <p className="text-[10px] text-slate-600 italic px-2">No skills available</p>
-              )}
+        <TabsContent value="agents" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Agent Builder</h2>
+              <p className="text-sm text-muted-foreground">Create and manage autonomous AI agents</p>
             </div>
-          </ScrollArea>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setShowTemplates(true); setShowCreateForm(false); }}>
+                Templates
+              </Button>
+              <Button onClick={() => setShowCreateForm(true)}>
+                + New Agent
+              </Button>
+            </div>
+          </div>
 
-          <div className="p-3 border-t border-slate-700/30">
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-semibold">Add Block</p>
-            <div className="grid grid-cols-2 gap-1">
-              {BLOCK_TYPES.map((bt) => (
-                <Button
-                  key={bt.type}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-[10px] text-slate-400 hover:text-white justify-start gap-1.5"
-                  onClick={() => addBlock(bt.type)}
-                >
-                  <bt.icon className="w-3 h-3" />
-                  {bt.label}
+          {showTemplates && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Pre-built Agent Templates</CardTitle>
+                <CardDescription>Select a template to get started quickly</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {AGENT_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.name}
+                      onClick={() => applyTemplate(tpl)}
+                      className="text-left p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                    >
+                      <p className="text-foreground font-medium">{tpl.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{tpl.desc}</p>
+                      <span className="text-xs text-muted-foreground/70 mt-2 block capitalize">
+                        {tpl.type} · {tpl.triggers}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <Button variant="ghost" onClick={() => setShowTemplates(false)} className="mt-3">
+                  Close
                 </Button>
-              ))}
-            </div>
-          </div>
-        </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Center Panel - Builder Canvas */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {project.blocks.map((block, idx) => {
-              const Icon = getBlockIcon(block.type);
-              const isSelected = block.id === project.selectedBlockId;
-              return (
-                <Card
-                  key={block.id}
-                  className={`bg-slate-800/30 border-slate-700/50 backdrop-blur transition-all ${
-                    isSelected ? "border-blue-500/50 ring-1 ring-blue-500/20" : "hover:border-slate-500/50"
-                  }`}
-                  onClick={() => setProject((prev) => ({ ...prev, selectedBlockId: block.id }))}
-                >
+          {showCreateForm && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Agent</CardTitle>
+                <CardDescription>Configure your AI agent</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Name</label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="My Agent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Type</label>
+                    <select
+                      value={form.type}
+                      onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
+                    >
+                      <option value="monitor">Monitor — always-on, watches, alerts</option>
+                      <option value="workflow">Workflow — event-driven, task-oriented</option>
+                      <option value="chat">Chat — conversational, user-facing</option>
+                      <option value="data">Data — analyze, transform, report</option>
+                      <option value="orchestrator">Orchestrator — manages other agents</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm text-muted-foreground block mb-1">Description</label>
+                    <Input
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      placeholder="What does this agent do?"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm text-muted-foreground block mb-1">System Prompt</label>
+                    <textarea
+                      value={form.systemPrompt}
+                      onChange={(e) => setForm({ ...form, systemPrompt: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-mono text-sm"
+                      rows={3}
+                      placeholder="You are a helpful assistant..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Model</label>
+                    <select
+                      value={form.model}
+                      onChange={(e) => setForm({ ...form, model: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
+                    >
+                      <option value="fast-8b">Fast 8B</option>
+                      <option value="chat">Chat</option>
+                      <option value="coding">Coding</option>
+                      <option value="vision">Vision</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Trigger</label>
+                    <select
+                      value={form.triggers}
+                      onChange={(e) => setForm({ ...form, triggers: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
+                    >
+                      <option value="manual">Manual only</option>
+                      <option value="cron">Cron schedule</option>
+                      <option value="event">Event-driven</option>
+                      <option value="cron+event">Cron + Events</option>
+                    </select>
+                  </div>
+                  {form.triggers.includes("cron") && (
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-1">Schedule (cron)</label>
+                      <Input
+                        value={form.schedule}
+                        onChange={(e) => setForm({ ...form, schedule: e.target.value })}
+                        placeholder="*/300 * * * * *"
+                        className="font-mono"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Tools (comma-separated)</label>
+                    <Input
+                      value={form.tools}
+                      onChange={(e) => setForm({ ...form, tools: e.target.value })}
+                      placeholder="rag_search, llm, notification"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Max Steps</label>
+                    <Input
+                      type="number"
+                      value={form.maxSteps}
+                      onChange={(e) => setForm({ ...form, maxSteps: parseInt(e.target.value) || 10 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Max Runtime (s)</label>
+                    <Input
+                      type="number"
+                      value={form.maxRuntime}
+                      onChange={(e) => setForm({ ...form, maxRuntime: parseInt(e.target.value) || 60 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Max Budget ($)</label>
+                    <Input
+                      type="number"
+                      value={form.maxBudget}
+                      onChange={(e) => setForm({ ...form, maxBudget: parseFloat(e.target.value) || 0.5 })}
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className="text-sm text-muted-foreground block mb-1">Requires Approval (tools)</label>
+                  <Input
+                    value={form.requireApproval}
+                    onChange={(e) => setForm({ ...form, requireApproval: e.target.value })}
+                    placeholder="notification (tools that need human approval)"
+                  />
+                </div>
+
+                {createError && (
+                  <p className="text-sm text-red-500 mt-4">{createError}</p>
+                )}
+
+                <div className="flex gap-2 mt-6">
+                  <Button onClick={handleCreateAgent} disabled={creating || !form.name}>
+                    {creating ? "Creating..." : "Save Agent"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {agentsLoading ? (
+              <div className="col-span-2 text-center py-8 text-muted-foreground">Loading agents...</div>
+            ) : agents.length === 0 ? (
+              <div className="col-span-2 text-center py-16">
+                <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-30" />
+                <p className="text-foreground">No agents yet</p>
+                <p className="text-muted-foreground text-sm mt-1">Create your first agent to automate your AI infrastructure.</p>
+              </div>
+            ) : (
+              agents.map((agent) => (
+                <Card key={agent.id} className="border-border">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <GripVertical className="w-3 h-3 text-slate-600 cursor-grab" />
-                        <Icon className="w-4 h-4 text-blue-400" />
-                        <CardTitle className="text-sm text-white">{block.title}</CardTitle>
-                        <Badge className="text-[9px] bg-slate-700 text-slate-400 border-slate-600">
-                          {block.type}
-                        </Badge>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{typeIcon[agent.type] || "\uD83E\uDD16"}</span>
+                        <div>
+                          <CardTitle>{agent.name}</CardTitle>
+                          <CardDescription className="capitalize">{agent.type} agent</CardDescription>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-500 hover:text-white"
-                          onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "up"); }}
-                          disabled={idx === 0}
-                        >
-                          <ChevronUp className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-500 hover:text-white"
-                          onClick={(e) => { e.stopPropagation(); moveBlock(block.id, "down"); }}
-                          disabled={idx === project.blocks.length - 1}
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-500 hover:text-red-400"
-                          onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${statusColor[agent.status] || "bg-gray-500"}`} />
+                        <span className="text-xs text-muted-foreground capitalize">{agent.status}</span>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <BlockConfigPanel
-                      block={block}
-                      models={models}
-                      mcpServers={mcpServers}
-                      skills={skills}
-                      onUpdate={(config) => updateBlockConfig(block.id, config)}
-                    />
+                  <CardContent>
+                    {agent.description && (
+                      <p className="text-sm text-muted-foreground mb-3">{agent.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                      <span>Tools: {agent.tools?.length || 0}</span>
+                      <span>Runs: {agent.totalRuns}</span>
+                      <span>Model: {agent.model}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleRunAgent(agent.id)}>
+                        ▶ Run Now
+                      </Button>
+                      <a href={`/agents/${agent.id}`} className="inline-flex">
+                        <Button size="sm" variant="ghost">
+                          Activity
+                        </Button>
+                      </a>
+                      <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteAgent(agent.id)}>
+                        Delete
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-
-            {project.blocks.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                <Blocks className="w-12 h-12 mb-4 opacity-30" />
-                <p className="text-sm">No blocks yet. Add blocks from the left panel.</p>
-              </div>
+              ))
             )}
           </div>
-        </div>
+        </TabsContent>
 
-        {/* Right Panel - Properties/Preview */}
-        <div className="w-72 border-l border-slate-700/50 bg-slate-900/30 flex flex-col">
-          <div className="p-3 border-b border-slate-700/30 flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Preview</h2>
-            <Button variant="ghost" size="sm" className="h-6 text-[10px] text-slate-400 hover:text-white">
-              <Eye className="w-3 h-3 mr-1" /> View
-            </Button>
-          </div>
-          <ScrollArea className="flex-1 p-3">
-            <div className="space-y-3">
-              <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Project</p>
-                <p className="text-xs text-white font-medium">{project.name}</p>
-              </div>
-              <Separator className="bg-slate-700/30" />
-              <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Blocks</p>
-                <div className="space-y-1">
-                  {project.blocks.map((b) => (
-                    <div
-                      key={b.id}
-                      className={`flex items-center gap-2 px-2 py-1 rounded text-[11px] cursor-pointer transition-colors ${
-                        b.id === project.selectedBlockId
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "text-slate-400 hover:bg-slate-700/30"
-                      }`}
-                      onClick={() => setProject((prev) => ({ ...prev, selectedBlockId: b.id }))}
-                    >
-                      {(() => {
-                        const Icon = getBlockIcon(b.type);
-                        return <Icon className="w-3 h-3" />;
-                      })()}
-                      <span className="truncate">{b.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Separator className="bg-slate-700/30" />
-              <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Configuration</p>
-                <pre className="text-[10px] text-slate-400 bg-slate-800/50 rounded p-2 overflow-x-auto max-h-[300px] overflow-y-auto">
-                  {JSON.stringify(buildConfig(), null, 2)}
-                </pre>
-              </div>
+        <TabsContent value="workflows" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Workflows</h2>
+              <p className="text-sm text-muted-foreground">Orchestrate multi-step AI pipelines</p>
             </div>
-          </ScrollArea>
-        </div>
-      </div>
-
-      {/* Bottom Panel - Output/Logs */}
-      <div className="border-t border-slate-700/50 bg-slate-900/50 backdrop-blur" style={{ minHeight: "180px" }}>
-        <Tabs defaultValue="output" className="h-full flex flex-col">
-          <div className="flex items-center justify-between px-4 pt-2">
-            <TabsList className="bg-slate-800/50 h-8">
-              <TabsTrigger value="output" className="text-xs h-6 data-[state=active]:bg-slate-700">
-                Output
-              </TabsTrigger>
-              <TabsTrigger value="logs" className="text-xs h-6 data-[state=active]:bg-slate-700">
-                Logs
-              </TabsTrigger>
-              <TabsTrigger value="errors" className="text-xs h-6 data-[state=active]:bg-slate-700">
-                Errors
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex items-center gap-2">
-              <Input
-                value={testQuery}
-                onChange={(e) => setTestQuery(e.target.value)}
-                placeholder="Enter test query..."
-                className="h-7 w-80 bg-slate-800 border-slate-700 text-white text-xs"
-                onKeyDown={(e) => e.key === "Enter" && handleTestRun()}
-              />
-              <Button
-                size="sm"
-                className="h-7 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                onClick={handleTestRun}
-                disabled={testRunning}
-              >
-                {testRunning ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />}
-                Run
+            <a href="/workflow-editor">
+              <Button>
+                <Workflow className="w-4 h-4 mr-2" /> New Workflow
               </Button>
-            </div>
+            </a>
           </div>
-          <TabsContent value="output" className="flex-1 p-0 m-0">
-            <textarea
-              ref={outputRef}
-              readOnly
-              value={testOutput}
-              className="w-full h-full bg-transparent text-green-400 text-xs font-mono p-4 resize-none outline-none"
-              placeholder="Test output will appear here..."
-            />
-          </TabsContent>
-          <TabsContent value="logs" className="flex-1 p-0 m-0">
-            <div className="p-4 text-xs text-slate-500 font-mono">
-              [System] Forge Builder initialized<br />
-              [System] {project.blocks.length} blocks loaded<br />
-              [System] Ready for testing
-            </div>
-          </TabsContent>
-          <TabsContent value="errors" className="flex-1 p-0 m-0">
-            <div className="p-4 text-xs text-slate-600 font-mono italic">
-              No errors
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
 
-      {/* Sandbox Panel */}
-      {sandboxOpen && (
-        <SandboxPanel onClose={() => setSandboxOpen(false)} initialCode={sandboxCode} />
-      )}
+          {workflowsLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading workflows...</div>
+          ) : workflows.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-16">
+                <Workflow className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-30" />
+                <p className="text-foreground">No workflows yet</p>
+                <p className="text-muted-foreground text-sm mt-1">Create your first workflow pipeline.</p>
+                <a href="/workflow-editor" className="inline-block mt-4">
+                  <Button>Create Workflow</Button>
+                </a>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {workflows.map((wf) => (
+                <Card key={wf.id} className="border-border">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{wf.name}</CardTitle>
+                      <Badge variant="outline">
+                        {wf.status}
+                      </Badge>
+                    </div>
+                    <CardDescription>{wf.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+                      <span>{wf.stepCount} step{wf.stepCount !== 1 ? "s" : ""}</span>
+                      <span>{wf.lastRunAt ? `Last run: ${new Date(wf.lastRunAt).toLocaleDateString()}` : "Never run"}</span>
+                    </div>
+                    <a href={`/workflow-editor?id=${wf.id}`}>
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Workflow className="w-3 h-3 mr-1" /> Edit
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="block-builder">
+          <BlockBuilder />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

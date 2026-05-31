@@ -64,6 +64,8 @@ import {
   HardDrive,
   Bell,
   Rocket,
+  FlaskConical,
+  GitBranch,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -86,13 +88,13 @@ const sidebarSections: Section[] = [
     title: "AI LAB",
     items: [
       { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
+      { icon: FlaskConical, label: "AI Lab", path: "/ai-lab" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
       { icon: MessageCircle, label: "Chat", path: "/chat" },
       { icon: Rocket, label: "Deployments", path: "/deployment-monitor" },
       { icon: Layers, label: "Inference Lab", path: "/inference" },
-      { icon: Boxes, label: "Forge Builder", path: "/builder" },
+      { icon: Boxes, label: "Forge Builder", path: "/forge-builder" },
       { icon: Bot, label: "Agents Builder", path: "/agents" },
-      { icon: Brain, label: "Agents", path: "/agentic" },
     ],
   },
   {
@@ -111,6 +113,8 @@ const sidebarSections: Section[] = [
       { icon: HeartPulse, label: "Provider Health", path: "/provider-health" },
       { icon: Webhook, label: "Webhooks", path: "/webhooks" },
       { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
+      { icon: GitBranch, label: "GitHub", path: "/github-explorer" },
+      { icon: Brain, label: "Brain", path: "/forge-brain" },
     ],
   },
   {
