@@ -8,26 +8,21 @@ import RegisterPage from "@/pages/Register";
 import ChatPage from "@/pages/Chat";
 import TenantDashboard from "@/pages/TenantDashboard";
 import AuditLogPage from "@/pages/AuditLog";
-import AgentBuilder from "@/pages/AgentBuilder";
 import AgentActivity from "@/pages/AgentActivity";
 import McpExplorer from "@/pages/McpExplorer";
 import MyMcps from "@/pages/MyMcps";
 import WorkflowEditor from "@/pages/WorkflowEditor";
 import WorkflowMonitor from "@/pages/WorkflowMonitor";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import ProviderMonitor from "./pages/ProviderMonitor";
 import RequestHistory from "./pages/RequestHistory";
 import AdminPanel from "./pages/AdminPanel";
 import SystemHealth from "./pages/SystemHealth";
-import ModelManager from "./pages/ModelManager";
-import ModelExplorer from "./pages/ModelExplorer";
 import InferenceLab from "./pages/InferenceLab";
-import Agentic from "./pages/Agentic";
 import ToolsHub from "./pages/ToolsHub";
 import Organizations from "./pages/Organizations";
 import AccessGroups from "./pages/AccessGroups";
@@ -54,14 +49,19 @@ import CustomProviders from "./pages/CustomProviders";
 import HuggingFace from "./pages/HuggingFace";
 import PromptLibrary from "./pages/PromptLibrary";
 import Benchmark from "./pages/Benchmark";
-import ProviderHealth from "./pages/ProviderHealth";
 import Webhooks from "./pages/Webhooks";
-import AILabHub from "./pages/AILabHub";
 import LocalModelManager from "./pages/LocalModelManager";
 import DeploymentMonitor from "./pages/DeploymentMonitor";
 import AILab from "./pages/AILab";
 import ForgeBrain from "./pages/ForgeBrain";
 import GithubExplorer from "./pages/GithubExplorer";
+import { useEffect } from "react";
+
+function Redirect({ href }: { href: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate(href, { replace: true }); }, []);
+  return null;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -79,68 +79,85 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function WrappedPage({ children }: { children: React.ReactNode }) {
+  return <ProtectedRoute><DashboardLayout>{children}</DashboardLayout></ProtectedRoute>;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
-      <Route path="/chat" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/chat/:id" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/tenant-dashboard" component={() => <ProtectedRoute><DashboardLayout><TenantDashboard /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agents" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agents/:id" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agent-activity" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/mcp-explorer" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/my-mcps" component={() => <ProtectedRoute><DashboardLayout><MyMcps /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/mcp/:slug" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/workflows" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/workflows/:id" component={() => <ProtectedRoute><DashboardLayout><WorkflowEditor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/workflow-monitor" component={() => <ProtectedRoute><DashboardLayout><WorkflowMonitor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogPage /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/deployment-monitor" component={() => <ProtectedRoute><DashboardLayout><DeploymentMonitor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/ai-lab" component={() => <ProtectedRoute><DashboardLayout><AILab /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/forge-builder" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/forge-brain" component={() => <ProtectedRoute><DashboardLayout><ForgeBrain /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/github-explorer" component={() => <ProtectedRoute><DashboardLayout><GithubExplorer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/explorer" component={() => <ProtectedRoute><DashboardLayout><ModelExplorer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/models" component={() => <ProtectedRoute><DashboardLayout><ModelManager /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/providers" component={() => <ProtectedRoute><DashboardLayout><ProviderMonitor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/requests" component={() => <ProtectedRoute><DashboardLayout><RequestHistory /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/admin" component={() => <ProtectedRoute><DashboardLayout><AdminPanel /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/health" component={() => <ProtectedRoute><DashboardLayout><SystemHealth /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/virtual-keys" component={() => <ProtectedRoute><DashboardLayout><VirtualKeys /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/mcp-servers" component={() => <ProtectedRoute><DashboardLayout><MCPServers /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/skills" component={() => <ProtectedRoute><DashboardLayout><SkillsHub /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/guardrails" component={() => <ProtectedRoute><DashboardLayout><Guardrails /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/tools-hub" component={() => <ProtectedRoute><DashboardLayout><ToolsHub /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/usage" component={() => <ProtectedRoute><DashboardLayout><Usage /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/logs" component={() => <ProtectedRoute><DashboardLayout><Logs /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/error-logs" component={() => <ProtectedRoute><DashboardLayout><ErrorLogs /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/guardrails-monitor" component={() => <ProtectedRoute><DashboardLayout><GuardrailsMonitor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/teams" component={() => <ProtectedRoute><DashboardLayout><Teams /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/internal-users" component={() => <ProtectedRoute><DashboardLayout><InternalUsers /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/organizations" component={() => <ProtectedRoute><DashboardLayout><Organizations /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/access-groups" component={() => <ProtectedRoute><DashboardLayout><AccessGroups /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/budgets" component={() => <ProtectedRoute><DashboardLayout><Budgets /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/system-monitor" component={() => <ProtectedRoute><DashboardLayout><SystemMonitor /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/process-manager" component={() => <ProtectedRoute><DashboardLayout><ProcessManager /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/local-models" component={() => <ProtectedRoute><DashboardLayout><LocalModelManager /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/llm-discoverer" component={() => <ProtectedRoute><DashboardLayout><LLMDiscoverer /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/api-reference" component={() => <ProtectedRoute><DashboardLayout><APIReference /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/ai-hub" component={() => <ProtectedRoute><DashboardLayout><AIHub /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/settings" component={() => <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/agentic" component={() => <ProtectedRoute><DashboardLayout><ForgeBuilder /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/builder" component={() => <ProtectedRoute><DashboardLayout><BlockBuilder /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/custom-providers" component={() => <ProtectedRoute><DashboardLayout><CustomProviders /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/huggingface" component={() => <ProtectedRoute><DashboardLayout><HuggingFace /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/prompts" component={() => <ProtectedRoute><DashboardLayout><PromptLibrary /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/benchmark" component={() => <ProtectedRoute><DashboardLayout><Benchmark /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/provider-health" component={() => <ProtectedRoute><DashboardLayout><ProviderHealth /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/webhooks" component={() => <ProtectedRoute><DashboardLayout><Webhooks /></DashboardLayout></ProtectedRoute>} />
+
+      {/* ─── CORE ────────────────────────────────────────────────── */}
+      <Route path="/chat" component={() => <WrappedPage><ChatPage /></WrappedPage>} />
+      <Route path="/chat/:id" component={() => <WrappedPage><ChatPage /></WrappedPage>} />
+      <Route path="/dashboard" component={() => <WrappedPage><Dashboard /></WrappedPage>} />
+      <Route path="/forge-builder" component={() => <WrappedPage><ForgeBuilder /></WrappedPage>} />
+      <Route path="/ai-lab" component={() => <WrappedPage><AILab /></WrappedPage>} />
+      <Route path="/forge-brain" component={() => <WrappedPage><ForgeBrain /></WrappedPage>} />
+
+      {/* ─── TOOLS ────────────────────────────────────────────────── */}
+      <Route path="/mcp" component={() => <WrappedPage><McpExplorer /></WrappedPage>} />
+      <Route path="/mcp-explorer" component={() => <WrappedPage><McpExplorer /></WrappedPage>} />
+      <Route path="/mcp/:slug" component={() => <WrappedPage><McpExplorer /></WrappedPage>} />
+      <Route path="/huggingface" component={() => <WrappedPage><HuggingFace /></WrappedPage>} />
+      <Route path="/github-explorer" component={() => <WrappedPage><GithubExplorer /></WrappedPage>} />
+      <Route path="/deployment-monitor" component={() => <WrappedPage><DeploymentMonitor /></WrappedPage>} />
+
+      {/* ─── SYSTEM ────────────────────────────────────────────────── */}
+      <Route path="/guard" component={() => <WrappedPage><GuardrailsMonitor /></WrappedPage>} />
+      <Route path="/guardrails-monitor" component={() => <WrappedPage><GuardrailsMonitor /></WrappedPage>} />
+      <Route path="/budgets" component={() => <WrappedPage><Budgets /></WrappedPage>} />
+      <Route path="/settings" component={() => <WrappedPage><Settings /></WrappedPage>} />
+
+      {/* ─── LEGACY ROUTES (keep working) ───────────────────────────── */}
+      <Route path="/builder" component={() => <WrappedPage><BlockBuilder /></WrappedPage>} />
+      <Route path="/agents" component={() => <WrappedPage><ForgeBuilder /></WrappedPage>} />
+      <Route path="/agents/:id" component={() => <WrappedPage><AgentActivity /></WrappedPage>} />
+      <Route path="/agent-activity" component={() => <WrappedPage><AgentActivity /></WrappedPage>} />
+      <Route path="/workflows" component={() => <WrappedPage><ForgeBuilder /></WrappedPage>} />
+      <Route path="/workflows/:id" component={() => <WrappedPage><WorkflowEditor /></WrappedPage>} />
+      <Route path="/workflow-monitor" component={() => <WrappedPage><WorkflowMonitor /></WrappedPage>} />
+      <Route path="/my-mcps" component={() => <WrappedPage><MyMcps /></WrappedPage>} />
+      <Route path="/mcp-servers" component={() => <WrappedPage><MCPServers /></WrappedPage>} />
+      <Route path="/local-models" component={() => <WrappedPage><LocalModelManager /></WrappedPage>} />
+      <Route path="/custom-providers" component={() => <WrappedPage><CustomProviders /></WrappedPage>} />
+      <Route path="/requests" component={() => <WrappedPage><RequestHistory /></WrappedPage>} />
+      <Route path="/admin" component={() => <WrappedPage><AdminPanel /></WrappedPage>} />
+      <Route path="/organizations" component={() => <WrappedPage><Organizations /></WrappedPage>} />
+      <Route path="/internal-users" component={() => <WrappedPage><InternalUsers /></WrappedPage>} />
+      <Route path="/teams" component={() => <WrappedPage><Teams /></WrappedPage>} />
+      <Route path="/inference" component={() => <WrappedPage><InferenceLab /></WrappedPage>} />
+      <Route path="/ai-hub" component={() => <WrappedPage><AIHub /></WrappedPage>} />
+      <Route path="/tenant-dashboard" component={() => <WrappedPage><TenantDashboard /></WrappedPage>} />
+
+      {/* ─── SUB-PAGE REDIRECTS ────────────────────────────────────── */}
+      <Route path="/lab" component={() => <Redirect href="/ai-lab" />} />
+      <Route path="/models" component={() => <Redirect href="/ai-lab?tab=models" />} />
+      <Route path="/providers" component={() => <Redirect href="/ai-lab?tab=providers" />} />
+      <Route path="/explorer" component={() => <Redirect href="/ai-lab?tab=models" />} />
+      <Route path="/benchmark" component={() => <Redirect href="/ai-lab?tab=compare" />} />
+      <Route path="/inference-lab" component={() => <Redirect href="/ai-lab?tab=discover" />} />
+      <Route path="/llm-discoverer" component={() => <Redirect href="/ai-lab?tab=discover" />} />
+      <Route path="/tools-hub" component={() => <Redirect href="/mcp?tab=tools" />} />
+      <Route path="/skills" component={() => <Redirect href="/mcp?tab=tools" />} />
+      <Route path="/prompts" component={() => <Redirect href="/mcp?tab=prompts" />} />
+      <Route path="/virtual-keys" component={() => <Redirect href="/budgets?tab=keys" />} />
+      <Route path="/usage" component={() => <Redirect href="/budgets" />} />
+      <Route path="/access-groups" component={() => <Redirect href="/settings?tab=access" />} />
+      <Route path="/webhooks" component={() => <Redirect href="/settings?tab=webhooks" />} />
+      <Route path="/api-reference" component={() => <Redirect href="/settings?tab=api" />} />
+      <Route path="/audit-logs" component={() => <Redirect href="/guard?tab=audit" />} />
+      <Route path="/system-monitor" component={() => <Redirect href="/guard?tab=monitor" />} />
+      <Route path="/process-manager" component={() => <Redirect href="/guard?tab=process" />} />
+      <Route path="/error-logs" component={() => <Redirect href="/guard?tab=alerts" />} />
+      <Route path="/guardrails" component={() => <Redirect href="/guard" />} />
+      <Route path="/health" component={() => <Redirect href="/guard" />} />
+      <Route path="/agentic" component={() => <Redirect href="/forge-builder?tab=agents" />} />
+      <Route path="/logs" component={() => <Redirect href="/budgets" />} />
+
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

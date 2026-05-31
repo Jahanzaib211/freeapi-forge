@@ -335,7 +335,7 @@ function BlockConfigPanel({
   return <p className="text-xs text-slate-500">No configuration available.</p>;
 }
 
-export default function ForgeBuilder() {
+export default function BlockBuilder() {
   const [project, setProject] = useState<ProjectState>({
     name: "Untitled Project",
     blocks: [
