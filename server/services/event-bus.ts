@@ -82,7 +82,7 @@ class EventBus extends EventEmitter {
     }
   }
 
-  async emit(event: EventType, data: Record<string, unknown>, tenantId?: number, userId?: number): Promise<void> {
+  async publish(event: EventType, data: Record<string, unknown>, tenantId?: number, userId?: number): Promise<void> {
     const payload: EventPayload = {
       type: event,
       tenantId,

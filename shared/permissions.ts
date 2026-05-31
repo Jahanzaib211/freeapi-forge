@@ -187,7 +187,7 @@ export const TENANT_ROLE_PERMISSIONS: Record<TenantRole, Record<Resource, Action
 
 export function hasPermission(
   globalRole: Role,
-  tenantRole: TenantRole | null,
+  tenantRole: TenantRole | null | undefined,
   resource: Resource,
   action: Action
 ): boolean {

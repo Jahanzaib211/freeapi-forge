@@ -9,12 +9,12 @@ function getJwtSecret(): Uint8Array {
 }
 
 export interface AuthRequest extends Request {
-  userId?: number;
+  userId?: number | null;
   userEmail?: string;
   userName?: string;
   userRole?: Role;
   tenantId?: number;
-  tenantRole?: TenantRole;
+  tenantRole?: TenantRole | null;
 }
 
 export async function authMiddleware(req: AuthRequest, _res: Response, next: NextFunction): Promise<void> {
@@ -28,12 +28,12 @@ export async function authMiddleware(req: AuthRequest, _res: Response, next: Nex
     const result = await jwtVerify(token, getJwtSecret());
     const payload = result.payload;
 
-    req.userId = payload.sub as number;
+    req.userId = payload.sub != null ? Number(payload.sub) : null;
     req.userEmail = payload.email as string;
     req.userName = payload.name as string;
     req.userRole = (payload.role as Role) || "user";
     req.tenantId = (payload.tenantId as number) || 1;
-    req.tenantRole = (payload.tenantRole as TenantRole) || "member";
+    req.tenantRole = (payload.tenantRole as TenantRole) || null;
 
     next();
   } catch {

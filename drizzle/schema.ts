@@ -428,3 +428,50 @@ export const messages = pgTable("messages", {
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = typeof messages.$inferInsert;
+
+// ─── DOCUMENTS (RAG) ─────────────────────────────────────────────────────────
+export const documents = pgTable("documents", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  name: varchar("name", { length: 500 }).notNull(),
+  type: varchar("type", { length: 32 }).notNull(),
+  chunkCount: integer("chunkCount").default(0).notNull(),
+  totalTokens: integer("totalTokens").default(0).notNull(),
+  uploadedBy: integer("uploadedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+
+// ─── DOCUMENT CHUNKS (RAG) ───────────────────────────────────────────────────
+export const documentChunks = pgTable("documentChunks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  documentId: integer("documentId").notNull(),
+  tenantId: integer("tenantId").notNull(),
+  chunkIndex: integer("chunkIndex").notNull(),
+  content: text("content").notNull(),
+  tokenCount: integer("tokenCount").default(0).notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DocumentChunk = typeof documentChunks.$inferSelect;
+export type InsertDocumentChunk = typeof documentChunks.$inferInsert;
+
+// ─── DISCORD CONFIGS ─────────────────────────────────────────────────────────
+export const discordConfigs = pgTable("discordConfigs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  botToken: varchar("botToken", { length: 512 }),
+  guildId: varchar("guildId", { length: 64 }),
+  channelId: varchar("channelId", { length: 64 }),
+  enabled: integer("enabled").default(0).notNull(),
+  model: varchar("model", { length: 255 }).default("fast-8b"),
+  systemPrompt: text("systemPrompt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type DiscordConfig = typeof discordConfigs.$inferSelect;
+export type InsertDiscordConfig = typeof discordConfigs.$inferInsert;

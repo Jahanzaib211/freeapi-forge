@@ -6,11 +6,11 @@ export interface AuthTokens {
 }
 
 export interface TokenPayload {
-  sub: number;
+  sub: string | number;
   email: string;
   name: string;
   role: string;
-  tenantId: number | null;
+  tenantId: string | number | null;
   tenantRole: string | null;
   iat: number;
   exp: number;

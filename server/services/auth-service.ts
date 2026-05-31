@@ -181,7 +181,7 @@ export class AuthService {
       return null;
     }
 
-    const userResult = await db.select().from(users).where(eq(users.id, payload.sub)).limit(1);
+    const userResult = await db.select().from(users).where(eq(users.id, Number(payload.sub))).limit(1);
     if (userResult.length === 0) return null;
 
     const user = userResult[0];
@@ -191,8 +191,8 @@ export class AuthService {
       email: user.email || "",
       name: user.name || "",
       role: user.role,
-      tenantId: payload.tenantId,
-      tenantRole: payload.tenantRole,
+      tenantId: payload.tenantId != null ? Number(payload.tenantId) : null,
+      tenantRole: payload.tenantRole || null,
     };
   }
 
@@ -215,11 +215,11 @@ export class AuthService {
     const now = Math.floor(Date.now() / 1000);
 
     const accessToken = await new SignJWT({
-      sub: userId,
+      sub: String(userId),
       email,
       name,
       role,
-      tenantId,
+      tenantId: tenantId != null ? String(tenantId) : null,
       tenantRole,
     } satisfies Partial<TokenPayload>)
       .setProtectedHeader({ alg: "HS256" })
@@ -227,7 +227,7 @@ export class AuthService {
       .setExpirationTime(ACCESS_TOKEN_EXPIRY)
       .sign(getJwtSecret());
 
-    const refreshToken = await new SignJWT({ sub: userId })
+    const refreshToken = await new SignJWT({ sub: String(userId) })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt(now)
       .setExpirationTime(`${REFRESH_TOKEN_EXPIRY_DAYS}d`)

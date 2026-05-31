@@ -69,10 +69,10 @@ export async function createContext(
         const token = authHeader.slice(7);
         const result = await jwtVerify(token, getJwtSecret());
         const payload = result.payload;
-        userId = payload.sub as number;
-        tenantId = (payload.tenantId as number) || 1;
-        userRole = (payload.role as string) || "user";
-        tenantRole = (payload.tenantRole as string) || null;
+        userId = Number(payload.sub);
+        tenantId = Number(payload.tenantId) || 1;
+        userRole = String(payload.role) || "user";
+        tenantRole = String(payload.tenantRole) || null;
 
         const found = await getUserByOpenId(`email:${payload.email}`);
         if (found) user = found;

@@ -255,7 +255,7 @@ export class ChatService {
     await budgetService.recordSpend(tenantId, monthYear, costUsd);
 
     // Emit event
-    eventBus.emit("chat.message", {
+    eventBus.publish("chat.message", {
       conversationId,
       model,
       tokens: totalTokens,

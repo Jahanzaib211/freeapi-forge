@@ -6,6 +6,7 @@ import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
 import ChatPage from "@/pages/Chat";
 import TenantDashboard from "@/pages/TenantDashboard";
+import AuditLogPage from "@/pages/AuditLog";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/chat" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/chat/:id" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/tenant-dashboard" component={() => <ProtectedRoute><TenantDashboard /></ProtectedRoute>} />
+      <Route path="/audit-logs" component={() => <ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />

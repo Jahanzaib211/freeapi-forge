@@ -58,6 +58,8 @@ import { localModelRouter } from "./routers/local_model_router";
 import { provisioningRouter } from "./routers/provisioning";
 import { chatRouter } from "./routers/chat";
 import { budgetRouter } from "./routers/budget";
+import { ragRouter } from "./routers/rag";
+import { discordRouter } from "./routers/discord";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -80,136 +82,6 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
-  }),
-
-  // Chat completions endpoint
-  chat: router({
-    complete: protectedProcedure
-      .input(
-        z.object({
-          messages: z.array(
-            z.object({
-              role: z.enum(["system", "user", "assistant"]),
-              content: z.string(),
-            })
-          ),
-          taskType: z.enum(["chat", "coding", "vision", "fast", "long_context", "local"]).default("chat"),
-          maxTokens: z.number().int().min(1).max(8192).default(1024),
-          temperature: z.number().min(0).max(2).default(0.7),
-          teamId: z.string().default("default"),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
-        const teamId = await resolveTeamId(ctx);
-        const tenantId = ctx.tenantId || 1;
-        const monthYear = new Date().toISOString().slice(0, 7);
-        const budget = await getOrCreateBudgetLimit(teamId, monthYear, 10, tenantId);
-        
-        if (budget) {
-          const currentSpendUsd = budget.currentSpendUsd / 1000000;
-          if (currentSpendUsd >= budget.monthlyLimitUsd) {
-            throw new Error(`Monthly budget limit exceeded: $${currentSpendUsd.toFixed(2)} / $${budget.monthlyLimitUsd}`);
-          }
-        }
-
-        const startTime = Date.now();
-
-        // Check if any model in the messages matches a custom provider
-        let response;
-
-        // Try to find a custom provider by checking the model from taskType mapping
-        const taskModelMap: Record<string, string> = {
-          chat: "fast-70b",
-          coding: "coder",
-          vision: "gemini-flash",
-          fast: "fast-8b",
-          long_context: "smart",
-          local: "qwen-moe",
-        };
-        const candidateModel = taskModelMap[input.taskType || "chat"] || "fast-70b";
-        const customProvider = await customProviderService.findProviderForModel(candidateModel);
-
-        if (customProvider) {
-          try {
-            const result = await directProxyChat({
-              messages: input.messages,
-              model: candidateModel,
-              apiUrl: customProvider.apiUrl,
-              apiKey: customProvider.apiKey,
-              maxTokens: input.maxTokens,
-              temperature: input.temperature,
-              stream: false,
-            });
-
-            response = {
-              id: result.id || `msg_${Date.now()}`,
-              object: result.object || "chat.completion",
-              created: result.created || Math.floor(Date.now() / 1000),
-              model: result.model || candidateModel,
-              provider: `custom:${customProvider.name}`,
-              choices: result.choices || [],
-              usage: result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-            };
-          } catch (err: any) {
-            console.error(`[CustomProvider] ${customProvider.name} failed:`, err.message);
-          }
-        }
-
-        if (!response) {
-          response = await llmRouter.complete({
-            messages: input.messages,
-            taskType: input.taskType,
-            maxTokens: input.maxTokens,
-            temperature: input.temperature,
-            teamId: String(teamId),
-          });
-        }
-
-        const latencyMs = Date.now() - startTime;
-        const costUsd = (response.usage.total_tokens / 1000000) * 0.0001;
-        const isError = response.choices[0]?.finish_reason === "error";
-        const providerName = response.provider;
-
-        if (isError) {
-          await providerService.recordFailure(providerName, tenantId);
-        } else {
-          await providerService.recordSuccess(providerName, tenantId);
-        }
-
-        const allProviders = await getAllProviders(tenantId);
-        const providerRecord = allProviders.find(p => p.name === providerName);
-        const providerId = providerRecord?.id || null;
-
-        await createRequestHistory(
-          response.id,
-          teamId,
-          providerId,
-          input.taskType,
-          response.usage.prompt_tokens,
-          response.usage.completion_tokens,
-          costUsd,
-          isError ? "error" : "success",
-          undefined,
-          tenantId
-        );
-
-        await updateBudgetSpend(teamId, monthYear, costUsd, tenantId);
-
-        await createAuditLog(
-          ctx.user?.id || null,
-          teamId,
-          "CHAT_COMPLETION",
-          JSON.stringify({
-            model: input.taskType,
-            tokens: response.usage?.total_tokens || 0,
-            latencyMs: Date.now() - startTime,
-            provider: response.provider || "unknown",
-          }),
-          tenantId
-        );
-
-        return response;
-      }),
   }),
 
   // Provider management
@@ -585,6 +457,12 @@ export const appRouter = router({
 
   // Budget management
   budgetManager: budgetRouter,
+
+  // RAG document intelligence
+  rag: ragRouter,
+
+  // Discord bridge
+  discord: discordRouter,
 });
 
 export type AppRouter = typeof appRouter;

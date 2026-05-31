@@ -28,7 +28,7 @@ export async function auditMiddleware(req: AuthRequest, res: Response, next: Nex
       })).catch(() => {});
     }
 
-    return originalEnd.apply(this, args);
+    return (originalEnd as any).apply(this, args);
   } as typeof res.end;
 
   next();

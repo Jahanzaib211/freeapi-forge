@@ -50,6 +50,15 @@ async function startServer() {
   // Initialize event bus
   eventBus.init(process.env.REDIS_URL);
 
+  // Auto-discover skills on startup
+  try {
+    const { skillManager } = await import("../services/skill_manager");
+    const result = await skillManager.autoDiscover();
+    console.log(`[Skills] ${result.discovered} filesystem, ${result.builtIn} built-in, ${result.total} total`);
+  } catch (err: any) {
+    console.warn("[Skills] Auto-discovery failed:", err.message);
+  }
+
   const app = express();
   const server = createServer(app);
 

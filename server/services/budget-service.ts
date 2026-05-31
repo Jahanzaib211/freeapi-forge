@@ -161,7 +161,7 @@ export class BudgetService {
     }
 
     // Emit event
-    eventBus.emit("budget.alert", {
+    eventBus.publish("budget.alert", {
       tenantId,
       threshold,
       usedUsd: status.usedUsd,

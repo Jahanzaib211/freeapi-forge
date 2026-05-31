@@ -96,7 +96,7 @@ export class TenantService {
       results = await db.select().from(tenants);
     }
 
-    return Promise.all(results.map(t => this.toTenantWithStats(t)));
+    const stats = await Promise.all(results.map(t => this.toTenantWithStats(t))); return stats;
   }
 
   async addUserToTenant(tenantId: number, userId: number, role: string = "member"): Promise<void> {
@@ -147,9 +147,9 @@ export class TenantService {
     if (tenantIds.length === 0) return [];
 
     const results = await db.select().from(tenants);
-    return results
-      .filter(t => tenantIds.includes(t.id))
-      .map(t => this.toTenantWithStats(t));
+    const filtered = results.filter(t => tenantIds.includes(t.id));
+    const stats = await Promise.all(filtered.map(t => this.toTenantWithStats(t)));
+    return stats;
   }
 
   private async toTenantWithStats(tenant: typeof tenants.$inferSelect): Promise<TenantWithStats> {
