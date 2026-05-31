@@ -66,6 +66,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm approve-builds bcrypt esbuild @swc/core
       - run: npx drizzle-kit push
       - run: pnpm build
