@@ -1,0 +1,508 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: var(--color-blue-700);
+  --primary-foreground: var(--color-blue-50);
+  --sidebar-primary: var(--color-blue-600);
+  --sidebar-primary-foreground: var(--color-blue-50);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --radius: 0.65rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.235 0.015 65);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.235 0.015 65);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.235 0.015 65);
+  --secondary: oklch(0.98 0.001 286.375);
+  --secondary-foreground: oklch(0.4 0.015 65);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.141 0.005 285.823);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.623 0.214 259.815);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.235 0.015 65);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
+}
+
+.dark {
+  --primary: var(--color-blue-700);
+  --primary-foreground: var(--color-blue-50);
+  --sidebar-primary: var(--color-blue-500);
+  --sidebar-primary-foreground: var(--color-blue-50);
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.85 0.005 65);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.85 0.005 65);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.85 0.005 65);
+  --secondary: oklch(0.24 0.006 286.033);
+  --secondary-foreground: oklch(0.7 0.005 65);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground:  oklch(0.92 0.005 65);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.488 0.243 264.376);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.85 0.005 65);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground:  oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --accent-color: oklch(0.623 0.214 259.815);
+  --accent-ring: oklch(0.488 0.243 264.376);
+  --density-padding: 1rem;
+  --density-gap: 0.75rem;
+  --transition-speed: 0.2s;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+/* Subtle noise texture overlay for dark backgrounds */
+.bg-noise::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: pageIn 0.2s ease-out;
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Subtle card hover lift */
+.card-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Glow border on hover */
+.glow-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.08);
+}
+
+/* Section header divider */
+.section-divider {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.15) 0%, rgba(148, 163, 184, 0.05) 50%, transparent 100%);
+  height: 1px;
+}
+
+/* Metric pulse animation for live data */
+@keyframes metricPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.metric-live {
+  animation: metricPulse 2s ease-in-out infinite;
+}
+
+/* Smooth scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+/* Light mode overrides for hardcoded dark colors */
+.light .min-h-screen {
+  background: var(--background) !important;
+}
+
+.light .bg-gradient-to-br {
+  background: var(--background) !important;
+}
+
+.light .bg-slate-800\/30,
+.light .bg-slate-800\/50,
+.light .bg-slate-900\/50 {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+}
+
+.light .bg-slate-700,
+.light .bg-slate-700\/30,
+.light .bg-slate-700\/50 {
+  background: var(--secondary) !important;
+}
+
+.light .bg-slate-900 {
+  background: var(--muted) !important;
+}
+
+.light .text-white,
+.light .text-slate-100 {
+  color: var(--foreground) !important;
+}
+
+.light .text-slate-400,
+.light .text-slate-500,
+.light .text-slate-300 {
+  color: var(--muted-foreground) !important;
+}
+
+.light .border-slate-700,
+.light .border-slate-700\/50,
+.light .border-slate-800 {
+  border-color: var(--border) !important;
+}
+
+.light .bg-green-600\/20,
+.light .bg-blue-600\/20,
+.light .bg-purple-600\/20,
+.light .bg-red-600\/20,
+.light .bg-yellow-600\/20,
+.light .bg-emerald-600\/20,
+.light .bg-pink-600\/20,
+.light .bg-amber-600\/20,
+.light .bg-cyan-600\/20,
+.light .bg-teal-600\/20,
+.light .bg-violet-600\/20,
+.light .bg-orange-600\/20,
+.light .bg-rose-600\/20,
+.light .bg-fuchsia-600\/20,
+.light .bg-lime-600\/20,
+.light .bg-sky-600\/20,
+.light .bg-indigo-600\/20 {
+  background: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+}
+
+.light .bg-blue-900\/20,
+.light .bg-blue-950\/20,
+.light .bg-green-900\/20,
+.light .bg-green-950\/20,
+.light .bg-purple-900\/20,
+.light .bg-purple-950\/20,
+.light .bg-yellow-900\/20,
+.light .bg-yellow-950\/20,
+.light .bg-emerald-900\/20,
+.light .bg-emerald-950\/20,
+.light .bg-pink-900\/20,
+.light .bg-pink-950\/20,
+.light .bg-amber-900\/20,
+.light .bg-amber-950\/20,
+.light .bg-red-900\/20,
+.light .bg-red-950\/20,
+.light .bg-indigo-900\/20,
+.light .bg-indigo-950\/20,
+.light .bg-cyan-900\/20,
+.light .bg-cyan-950\/20,
+.light .bg-teal-900\/20,
+.light .bg-teal-950\/20,
+.light .bg-violet-900\/20,
+.light .bg-violet-950\/20,
+.light .bg-orange-900\/20,
+.light .bg-orange-950\/20,
+.light .bg-rose-900\/20,
+.light .bg-rose-950\/20,
+.light .bg-fuchsia-900\/20,
+.light .bg-fuchsia-950\/20,
+.light .bg-lime-900\/20,
+.light .bg-lime-950\/20,
+.light .bg-sky-900\/20,
+.light .bg-sky-950\/20 {
+  background: color-mix(in srgb, var(--card) 80%, var(--primary) 5%) !important;
+}
+
+.light .border-blue-700\/50,
+.light .border-green-700\/50,
+.light .border-purple-700\/50,
+.light .border-yellow-700\/50,
+.light .border-emerald-700\/50,
+.light .border-pink-700\/50,
+.light .border-amber-700\/50,
+.light .border-red-700\/50,
+.light .border-cyan-700\/50,
+.light .border-teal-700\/50,
+.light .border-violet-700\/50,
+.light .border-orange-700\/50,
+.light .border-rose-700\/50,
+.light .border-fuchsia-700\/50,
+.light .border-lime-700\/50,
+.light .border-sky-700\/50,
+.light .border-indigo-700\/50,
+.light .border-blue-600\/50,
+.light .border-green-600\/50,
+.light .border-purple-600\/50,
+.light .border-yellow-600\/50,
+.light .border-emerald-600\/50,
+.light .border-pink-600\/50,
+.light .border-amber-600\/50,
+.light .border-red-600\/50,
+.light .border-cyan-600\/50,
+.light .border-teal-600\/50,
+.light .border-violet-600\/50,
+.light .border-orange-600\/50,
+.light .border-rose-600\/50,
+.light .border-fuchsia-600\/50,
+.light .border-lime-600\/50,
+.light .border-sky-600\/50,
+.light .border-indigo-600\/50 {
+  border-color: var(--border) !important;
+}
+
+.light .hover\:bg-slate-800\/50:hover,
+.light .hover\:bg-slate-700\/50:hover {
+  background: color-mix(in srgb, var(--secondary) 80%, var(--primary) 5%) !important;
+}
+
+.light .hover\:border-blue-600\/50:hover,
+.light .hover\:border-green-600\/50:hover,
+.light .hover\:border-purple-600\/50:hover,
+.light .hover\:border-yellow-600\/50:hover,
+.light .hover\:border-emerald-600\/50:hover,
+.light .hover\:border-pink-600\/50:hover,
+.light .hover\:border-amber-600\/50:hover,
+.light .hover\:border-red-600\/50:hover,
+.light .hover\:border-cyan-600\/50:hover,
+.light .hover\:border-teal-600\/50:hover,
+.light .hover\:border-violet-600\/50:hover,
+.light .hover\:border-orange-600\/50:hover,
+.light .hover\:border-rose-600\/50:hover,
+.light .hover\:border-fuchsia-600\/50:hover,
+.light .hover\:border-lime-600\/50:hover,
+.light .hover\:border-sky-600\/50:hover,
+.light .hover\:border-indigo-600\/50:hover,
+.light .hover\:border-slate-600\/50:hover {
+  border-color: var(--primary) !important;
+}
+
+.light .bg-green-600\/20,
+.light .bg-blue-600\/20 {
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+}
+
+.light .text-green-400,
+.light .text-blue-400,
+.light .text-purple-400,
+.light .text-yellow-400,
+.light .text-emerald-400,
+.light .text-pink-400,
+.light .text-amber-400,
+.light .text-red-400,
+.light .text-cyan-400,
+.light .text-teal-400,
+.light .text-violet-400,
+.light .text-orange-400,
+.light .text-rose-400,
+.light .text-fuchsia-400,
+.light .text-lime-400,
+.light .text-sky-400,
+.light .text-indigo-400,
+.light .text-blue-500,
+.light .text-green-500 {
+  color: var(--primary) !important;
+}
+
+.light .text-green-600\/20,
+.light .bg-green-600\/20 {
+  color: oklch(0.4 0.12 145) !important;
+  background-color: oklch(0.4 0.12 145 / 10%) !important;
+}
+
+.light .bg-slate-600\/20,
+.light .text-slate-600 {
+  color: var(--muted-foreground) !important;
+  background-color: var(--secondary) !important;
+}
+
+.light .hover\:text-white:hover,
+.light .hover\:text-blue-400:hover {
+  color: var(--foreground) !important;
+}
+
+.light .hover\:bg-red-900\/20:hover {
+  background: oklch(0.577 0.245 27.325 / 10%) !important;
+}
+
+.light .border-red-600\/50 {
+  border-color: oklch(0.577 0.245 27.325 / 50%) !important;
+}
+
+.light .text-red-400 {
+  color: oklch(0.577 0.245 27.325) !important;
+}
+
+.light .bg-red-600\/20 {
+  background-color: oklch(0.577 0.245 27.325 / 15%) !important;
+}
+
+.light .border-slate-600 {
+  border-color: var(--border) !important;
+}
+
+.light .bg-slate-700 {
+  background: var(--secondary) !important;
+}
+
+.light .text-slate-300 {
+  color: var(--foreground) !important;
+}
+
+.light .bg-slate-900\/50 {
+  background: var(--muted) !important;
+}
+
+.light .bg-slate-800\/50:hover {
+  background: var(--secondary) !important;
+}
+
+.light .bg-green-600\/20 {
+  background-color: oklch(0.4 0.12 145 / 15%) !important;
+}
+
+.light .text-green-400 {
+  color: oklch(0.5 0.14 145) !important;
+}
+
+.light .border-green-600\/50 {
+  border-color: oklch(0.4 0.12 145 / 50%) !important;
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}

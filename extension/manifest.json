@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Forge Studio",
+  "version": "1.0.0",
+  "description": "Intelligent LLM routing directly from your browser",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Forge Studio"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

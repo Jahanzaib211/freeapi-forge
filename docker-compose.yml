@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: forge-studio-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - forge-network
+
+  postgres:
+    image: postgres:17
+    container_name: forge-studio-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-forge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forge_password}
+      POSTGRES_DB: ${POSTGRES_DB:-forge_studio}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - forge-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: forge-studio-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - forge-network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forge-studio-app
+    environment:
+      NODE_ENV: production
+      PORT: 5051
+      DATABASE_URL: postgresql://${POSTGRES_USER:-forge}:${POSTGRES_PASSWORD:-forge_password}@postgres:5432/${POSTGRES_DB:-forge_studio}
+      REDIS_URL: redis://redis:6379/1
+      LITELLM_URL: ${LITELLM_URL:-http://host.docker.internal:5050}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-ai-lab-master-key}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}
+    expose:
+      - "5051"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5051/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - forge-network
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: forge-studio-ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - forge-network
+    restart: unless-stopped
+    profiles:
+      - with-ollama
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  forge-network:
+    driver: bridge

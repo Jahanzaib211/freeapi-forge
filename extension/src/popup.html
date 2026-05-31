@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forge Studio</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Forge Studio</h1>
+            <button id="settings-btn" class="settings-btn" title="Settings">⚙️</button>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="settings-panel hidden">
+            <div class="settings-content">
+                <h2>Configuration</h2>
+                <div class="form-group">
+                    <label for="api-key">API Key</label>
+                    <input type="password" id="api-key" placeholder="Enter your API key" />
+                </div>
+                <div class="form-group">
+                    <label for="api-endpoint">API Endpoint</label>
+                    <input type="text" id="api-endpoint" placeholder="https://api.example.com" />
+                </div>
+                <div class="form-group">
+                    <label for="team-id">Team ID</label>
+                    <input type="text" id="team-id" placeholder="default" />
+                </div>
+                <button id="save-settings" class="btn btn-primary">Save Settings</button>
+                <button id="close-settings" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div id="chat-panel" class="chat-panel">
+            <!-- Task Type Selector -->
+            <div class="form-group">
+                <label for="task-type">Task Type</label>
+                <select id="task-type">
+                    <option value="chat">Chat</option>
+                    <option value="coding">Coding</option>
+                    <option value="vision">Vision</option>
+                    <option value="fast">Fast</option>
+                    <option value="long_context">Long Context</option>
+                </select>
+            </div>
+
+            <!-- Messages Display -->
+            <div id="messages" class="messages"></div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <textarea id="message-input" placeholder="Type your message..." rows="3"></textarea>
+                <button id="send-btn" class="btn btn-primary">Send</button>
+            </div>
+
+            <!-- Status -->
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
