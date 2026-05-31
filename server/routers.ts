@@ -67,6 +67,7 @@ import { githubActionsRouter } from "./routers/github-actions";
 import { aiLabRouter } from "./routers/ai-lab";
 import { forgeBrainRouter } from "./routers/forge-brain";
 import { githubExplorerRouter } from "./routers/github-explorer";
+import { guardRouter } from "./routers/guard";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -491,6 +492,9 @@ export const appRouter = router({
 
   // GitHub Explorer
   githubExplorer: githubExplorerRouter,
+
+  // Guard Monitor
+  guard: guardRouter,
 });
 
 export type AppRouter = typeof appRouter;
