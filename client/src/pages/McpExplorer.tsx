@@ -68,10 +68,10 @@ export default function McpExplorer() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">🔌 MCP Explorer</h1>
-          <p className="text-gray-400 mt-1">Discover and install AI tool integrations. {plan.name} plan: {plan.maxMcpServers} max servers.</p>
+          <h1 className="text-2xl font-bold text-foreground">🔌 MCP Explorer</h1>
+          <p className="text-muted-foreground mt-1">Discover and install AI tool integrations. {plan.name} plan: {plan.maxMcpServers} max servers.</p>
         </div>
-        <a href="/my-mcps" className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
+        <a href="/my-mcps" className="px-4 py-2 bg-gray-800 text-foreground rounded-lg text-sm hover:bg-gray-700">
           My MCPs ({mcps.filter(m => m.installed).length})
         </a>
       </div>
@@ -79,9 +79,9 @@ export default function McpExplorer() {
       {/* Search */}
       <div className="flex gap-3">
         <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && search()}
-          placeholder="Search MCP servers..." className="flex-1 px-4 py-2 bg-[#111827] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#00FFB2]" />
+          placeholder="Search MCP servers..." className="flex-1 px-4 py-2 bg-card border border-gray-700 rounded-lg text-foreground placeholder-gray-500 focus:outline-none focus:border-[#00FFB2]" />
         <select value={category} onChange={e => setCategory(e.target.value)}
-          className="px-3 py-2 bg-[#111827] border border-gray-700 rounded-lg text-white text-sm">
+          className="px-3 py-2 bg-card border border-gray-700 rounded-lg text-foreground text-sm">
           <option value="">All Categories</option>
           <option value="developer-tools">Developer Tools</option>
           <option value="data">Data</option>
@@ -95,7 +95,7 @@ export default function McpExplorer() {
           <option value="file-management">File Management</option>
         </select>
         <select value={tier} onChange={e => setTier(e.target.value)}
-          className="px-3 py-2 bg-[#111827] border border-gray-700 rounded-lg text-white text-sm">
+          className="px-3 py-2 bg-card border border-gray-700 rounded-lg text-foreground text-sm">
           <option value="">All Tiers</option>
           <option value="free">Free</option>
           <option value="pro">Pro</option>
@@ -107,19 +107,19 @@ export default function McpExplorer() {
       {/* Featured */}
       {featured.length > 0 && !query && !category && !tier && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-3">⭐ Featured MCP Servers</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-3">⭐ Featured MCP Servers</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {featured.map(mcp => (
-              <div key={mcp.id} className="bg-[#111827] border border-gray-800 rounded-xl p-4 hover:border-gray-700">
+              <div key={mcp.id} className="bg-card border border-border rounded-xl p-4 hover:border-gray-700">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">{mcp.icon}</span>
                   <div>
-                    <p className="text-white font-medium">{mcp.name}</p>
-                    <p className="text-xs text-gray-500">{mcp.category}</p>
+                    <p className="text-foreground font-medium">{mcp.name}</p>
+                    <p className="text-xs text-muted-foreground/70">{mcp.category}</p>
                   </div>
                   {tierBadge(mcp.tier)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground/70 mb-3">
                   <span>⭐ {mcp.rating}</span>
                   <span>📊 {(mcp.installCount / 1000).toFixed(1)}k installs</span>
                 </div>
@@ -139,21 +139,21 @@ export default function McpExplorer() {
 
       {/* All MCPs */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-3">All MCP Servers ({mcps.length})</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">All MCP Servers ({mcps.length})</h2>
         <div className="space-y-2">
           {mcps.map(mcp => (
-            <div key={mcp.id} className="bg-[#111827] border border-gray-800 rounded-xl p-4 hover:border-gray-700">
+            <div key={mcp.id} className="bg-card border border-border rounded-xl p-4 hover:border-gray-700">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
                   <span className="text-2xl mt-1">{mcp.icon}</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <a href={`/mcp/${mcp.slug}`} className="text-white font-medium hover:text-[#00FFB2]">{mcp.name}</a>
+                      <a href={`/mcp/${mcp.slug}`} className="text-foreground font-medium hover:text-[#00FFB2]">{mcp.name}</a>
                       {tierBadge(mcp.tier)}
                       <span className="text-xs text-gray-600">{mcp.author}</span>
                     </div>
-                    <p className="text-sm text-gray-400 mb-2">{mcp.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <p className="text-sm text-muted-foreground mb-2">{mcp.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground/70">
                       <span>⭐ {mcp.rating} ({mcp.reviewCount})</span>
                       <span>📊 {(mcp.installCount / 1000).toFixed(1)}k installs</span>
                       <span>🎯 {mcp.category}</span>
@@ -170,14 +170,14 @@ export default function McpExplorer() {
                       Install
                     </button>
                   ) : (
-                    <span className="text-gray-500 text-sm">Upgrade to Pro</span>
+                    <span className="text-muted-foreground/70 text-sm">Upgrade to Pro</span>
                   )}
                 </div>
               </div>
             </div>
           ))}
           {mcps.length === 0 && !loading && (
-            <div className="text-center py-12 text-gray-500">No MCP servers found</div>
+            <div className="text-center py-12 text-muted-foreground/70">No MCP servers found</div>
           )}
         </div>
       </div>

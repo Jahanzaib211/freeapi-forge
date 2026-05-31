@@ -164,11 +164,11 @@ export default function AgentBuilder() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">🤖 Agent Builder</h1>
-          <p className="text-gray-400 mt-1">Create and manage autonomous AI agents</p>
+          <h1 className="text-2xl font-bold text-foreground">🤖 Agent Builder</h1>
+          <p className="text-muted-foreground mt-1">Create and manage autonomous AI agents</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => { setShowTemplates(true); setShowForm(false); }} className="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
+          <button onClick={() => { setShowTemplates(true); setShowForm(false); }} className="px-4 py-2 bg-gray-800 text-foreground rounded-lg text-sm hover:bg-gray-700">
             Templates
           </button>
           <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-[#00FFB2] text-black rounded-lg text-sm font-medium hover:bg-[#00cc8e]">
@@ -179,36 +179,36 @@ export default function AgentBuilder() {
 
       {/* Template Picker */}
       {showTemplates && (
-        <div className="bg-[#111827] border border-gray-800 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-4">Pre-built Agent Templates</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Pre-built Agent Templates</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {AGENT_TEMPLATES.map(tpl => (
               <button key={tpl.name} onClick={() => applyTemplate(tpl)}
-                className="text-left p-4 bg-[#0a0a0f] border border-gray-700 rounded-lg hover:border-[#00FFB2] transition-colors">
-                <p className="text-white font-medium">{tpl.name}</p>
-                <p className="text-xs text-gray-500 mt-1">{tpl.desc}</p>
+                className="text-left p-4 bg-background border border-border/80 rounded-lg hover:border-[#00FFB2] transition-colors">
+                <p className="text-foreground font-medium">{tpl.name}</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">{tpl.desc}</p>
                 <span className="text-xs text-gray-600 mt-2 block capitalize">{tpl.type} · {tpl.triggers}</span>
               </button>
             ))}
           </div>
-          <button onClick={() => setShowTemplates(false)} className="mt-3 text-gray-500 text-sm hover:text-white">Close</button>
+          <button onClick={() => setShowTemplates(false)} className="mt-3 text-muted-foreground/70 text-sm hover:text-foreground">Close</button>
         </div>
       )}
 
       {/* Create/Edit Form */}
       {showForm && (
-        <div className="bg-[#111827] border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">{editing ? "Edit" : "Create"} Agent</h2>
+        <div className="bg-card border border-border rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-4">{editing ? "Edit" : "Create"} Agent</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Name</label>
+              <label className="text-sm text-muted-foreground block mb-1">Name</label>
               <input value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white" />
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground" />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Type</label>
+              <label className="text-sm text-muted-foreground block mb-1">Type</label>
               <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white">
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground">
                 <option value="monitor">👁️ Monitor — always-on, watches, alerts</option>
                 <option value="workflow">⚡ Workflow — event-driven, task-oriented</option>
                 <option value="chat">💬 Chat — conversational, user-facing</option>
@@ -217,19 +217,19 @@ export default function AgentBuilder() {
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm text-gray-400 block mb-1">Description</label>
+              <label className="text-sm text-muted-foreground block mb-1">Description</label>
               <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white" rows={2} />
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground" rows={2} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm text-gray-400 block mb-1">System Prompt</label>
+              <label className="text-sm text-muted-foreground block mb-1">System Prompt</label>
               <textarea value={form.systemPrompt} onChange={e => setForm({...form, systemPrompt: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white font-mono text-sm" rows={3} />
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground font-mono text-sm" rows={3} />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Model</label>
+              <label className="text-sm text-muted-foreground block mb-1">Model</label>
               <select value={form.model} onChange={e => setForm({...form, model: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white">
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground">
                 <option value="fast-8b">Fast 8B</option>
                 <option value="chat">Chat</option>
                 <option value="coding">Coding</option>
@@ -237,9 +237,9 @@ export default function AgentBuilder() {
               </select>
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Trigger</label>
+              <label className="text-sm text-muted-foreground block mb-1">Trigger</label>
               <select value={form.triggers} onChange={e => setForm({...form, triggers: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white">
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground">
                 <option value="manual">Manual only</option>
                 <option value="cron">Cron schedule</option>
                 <option value="event">Event-driven</option>
@@ -248,42 +248,42 @@ export default function AgentBuilder() {
             </div>
             {form.triggers.includes("cron") && (
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Schedule (cron)</label>
+                <label className="text-sm text-muted-foreground block mb-1">Schedule (cron)</label>
                 <input value={form.schedule} onChange={e => setForm({...form, schedule: e.target.value})}
                   placeholder="*/300 * * * * * (every 5 min)"
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white font-mono text-sm" />
+                  className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground font-mono text-sm" />
               </div>
             )}
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Tools (comma-separated)</label>
+              <label className="text-sm text-muted-foreground block mb-1">Tools (comma-separated)</label>
               <input value={form.tools} onChange={e => setForm({...form, tools: e.target.value})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white font-mono text-sm"
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground font-mono text-sm"
                 placeholder="rag_search, llm, health_check, notification" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Max Steps</label>
+              <label className="text-sm text-muted-foreground block mb-1">Max Steps</label>
               <input type="number" value={form.maxSteps} onChange={e => setForm({...form, maxSteps: parseInt(e.target.value) || 10})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white" />
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground" />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Max Runtime (s)</label>
+              <label className="text-sm text-muted-foreground block mb-1">Max Runtime (s)</label>
               <input type="number" value={form.maxRuntime} onChange={e => setForm({...form, maxRuntime: parseInt(e.target.value) || 60})}
-                className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white" />
+                className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground" />
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1">Max Budget ($)</label>
+              <label className="text-sm text-muted-foreground block mb-1">Max Budget ($)</label>
               <input type="number" value={form.maxBudget} onChange={e => setForm({...form, maxBudget: parseFloat(e.target.value) || 0.5})}
-                step="0.1" className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white" />
+                step="0.1" className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground" />
             </div>
           </div>
 
           <div className="mt-4">
-            <label className="text-sm text-gray-400 block mb-1">Requires Approval (tools)</label>
+            <label className="text-sm text-muted-foreground block mb-1">Requires Approval (tools)</label>
             <input value={form.requireApproval} onChange={e => setForm({...form, requireApproval: e.target.value})}
-              className="w-full px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-white"
+              className="w-full px-3 py-2 bg-background border border-border/80 rounded-lg text-foreground"
               placeholder="notification (tools that need human approval)" />
           </div>
 
@@ -292,7 +292,7 @@ export default function AgentBuilder() {
               className="px-6 py-2 bg-[#00FFB2] text-black font-medium rounded-lg hover:bg-[#00cc8e] disabled:opacity-50">
               Save Agent
             </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-gray-800 text-foreground rounded-lg hover:bg-gray-700">
               Cancel
             </button>
           </div>
@@ -302,24 +302,24 @@ export default function AgentBuilder() {
       {/* Agent List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {agents.map(agent => (
-          <div key={agent.id} className="bg-[#111827] border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-colors">
+          <div key={agent.id} className="bg-card border border-border rounded-xl p-5 hover:border-border/80 transition-colors">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{typeIcon[agent.type] || "🤖"}</span>
                 <div>
-                  <h3 className="text-white font-medium">{agent.name}</h3>
-                  <p className="text-xs text-gray-500 capitalize">{agent.type} agent</p>
+                  <h3 className="text-foreground font-medium">{agent.name}</h3>
+                  <p className="text-xs text-muted-foreground/70 capitalize">{agent.type} agent</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${statusColor[agent.status] || "bg-gray-500"}`} />
-                <span className="text-xs text-gray-400 capitalize">{agent.status}</span>
+                <span className="text-xs text-muted-foreground capitalize">{agent.status}</span>
               </div>
             </div>
             {agent.description && (
-              <p className="text-sm text-gray-400 mt-3">{agent.description}</p>
+              <p className="text-sm text-muted-foreground mt-3">{agent.description}</p>
             )}
-            <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground/70">
               <span>🛠️ {agent.tools?.length || 0} tools</span>
               <span>▶️ {agent.totalRuns} runs</span>
               <span>📋 {agent.model}</span>
@@ -330,7 +330,7 @@ export default function AgentBuilder() {
                 ▶ Run Now
               </button>
               <a href={`/agents/${agent.id}`}
-                className="px-3 py-1 bg-gray-800 text-white rounded text-xs hover:bg-gray-700">
+                className="px-3 py-1 bg-gray-800 text-foreground rounded text-xs hover:bg-gray-700">
                 Activity
               </a>
               <button onClick={() => deleteAgent(agent.id)}
@@ -341,7 +341,7 @@ export default function AgentBuilder() {
           </div>
         ))}
         {agents.length === 0 && (
-          <div className="col-span-2 text-center py-12 text-gray-500">
+          <div className="col-span-2 text-center py-12 text-muted-foreground/70">
             <p className="text-4xl mb-3">🤖</p>
             <p>No agents yet. Create your first agent to automate your AI infrastructure.</p>
           </div>

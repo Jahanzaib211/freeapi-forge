@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/DashboardLayout";
+import CommandPalette from "@/components/CommandPalette";
 import NotFound from "@/pages/NotFound";
 import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
@@ -78,16 +79,16 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
-      <Route path="/chat" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
-      <Route path="/chat/:id" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
-      <Route path="/tenant-dashboard" component={() => <ProtectedRoute><TenantDashboard /></ProtectedRoute>} />
-      <Route path="/agents" component={() => <ProtectedRoute><AgentBuilder /></ProtectedRoute>} />
-      <Route path="/agents/:id" component={() => <ProtectedRoute><AgentActivity /></ProtectedRoute>} />
-      <Route path="/agent-activity" component={() => <ProtectedRoute><AgentActivity /></ProtectedRoute>} />
-      <Route path="/mcp-explorer" component={() => <ProtectedRoute><McpExplorer /></ProtectedRoute>} />
-      <Route path="/my-mcps" component={() => <ProtectedRoute><MyMcps /></ProtectedRoute>} />
-      <Route path="/mcp/:slug" component={() => <ProtectedRoute><McpExplorer /></ProtectedRoute>} />
-      <Route path="/audit-logs" component={() => <ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
+      <Route path="/chat" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/chat/:id" component={() => <ProtectedRoute><DashboardLayout><ChatPage /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/tenant-dashboard" component={() => <ProtectedRoute><DashboardLayout><TenantDashboard /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agents" component={() => <ProtectedRoute><DashboardLayout><AgentBuilder /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agents/:id" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/agent-activity" component={() => <ProtectedRoute><DashboardLayout><AgentActivity /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/mcp-explorer" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/my-mcps" component={() => <ProtectedRoute><DashboardLayout><MyMcps /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/mcp/:slug" component={() => <ProtectedRoute><DashboardLayout><McpExplorer /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />
@@ -139,6 +140,7 @@ function App() {
       <ThemeProvider defaultTheme="dark" switchable>
         <TooltipProvider>
           <Toaster />
+          <CommandPalette />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

@@ -79,8 +79,8 @@ export default function AgentActivity() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Agent Activity</h1>
-          <p className="text-gray-400 mt-1">Run history, approvals, and live execution traces</p>
+          <h1 className="text-2xl font-bold text-foreground">Agent Activity</h1>
+          <p className="text-muted-foreground mt-1">Run history, approvals, and live execution traces</p>
         </div>
         <button onClick={loadData} className="px-4 py-2 bg-[#00FFB2] text-black rounded-lg text-sm font-medium hover:bg-[#00cc8e]">
           Refresh
@@ -93,10 +93,10 @@ export default function AgentActivity() {
           <h2 className="text-lg font-semibold text-yellow-400 mb-3">⏳ Pending Approvals ({approvals.length})</h2>
           <div className="space-y-2">
             {approvals.map(ap => (
-              <div key={ap.id} className="flex items-center justify-between bg-[#0a0a0f] rounded-lg p-3">
+              <div key={ap.id} className="flex items-center justify-between bg-background rounded-lg p-3">
                 <div>
-                  <p className="text-white text-sm font-medium">{ap.toolName}</p>
-                  <p className="text-gray-500 text-xs">{ap.params}</p>
+                  <p className="text-foreground text-sm font-medium">{ap.toolName}</p>
+                  <p className="text-muted-foreground/70 text-xs">{ap.params}</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approveTool(ap.id, true)}
@@ -111,27 +111,27 @@ export default function AgentActivity() {
       )}
 
       {/* Run History */}
-      <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-gray-800">
-          <h2 className="text-lg font-semibold text-white">Run History</h2>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Run History</h2>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-800/50">
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Time</th>
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Trigger</th>
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Status</th>
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Steps</th>
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Cost</th>
-              <th className="text-left text-xs text-gray-400 uppercase p-4">Details</th>
+            <tr className="border-b border-border/50">
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Time</th>
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Trigger</th>
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Status</th>
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Steps</th>
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Cost</th>
+              <th className="text-left text-xs text-muted-foreground uppercase p-4">Details</th>
             </tr>
           </thead>
           <tbody>
             {runs.map(run => (
-              <tr key={run.id} className="border-b border-gray-800/50 hover:bg-gray-800/20 cursor-pointer"
+              <tr key={run.id} className="border-b border-border/50 hover:bg-gray-800/20 cursor-pointer"
                 onClick={() => setSelectedRun(selectedRun?.id === run.id ? null : run)}>
-                <td className="p-4 text-sm text-gray-400">{new Date(run.startedAt).toLocaleString()}</td>
-                <td className="p-4 text-sm text-gray-400">{run.trigger}</td>
+                <td className="p-4 text-sm text-muted-foreground">{new Date(run.startedAt).toLocaleString()}</td>
+                <td className="p-4 text-sm text-muted-foreground">{run.trigger}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     run.status === "success" ? "bg-green-500/10 text-green-400" :
@@ -140,13 +140,13 @@ export default function AgentActivity() {
                     "bg-blue-500/10 text-blue-400"
                   }`}>{run.status}</span>
                 </td>
-                <td className="p-4 text-sm text-gray-400">{run.steps}</td>
-                <td className="p-4 text-sm text-gray-400">${(run.totalCost / 1_000_000).toFixed(4)}</td>
-                <td className="p-4 text-sm text-gray-500 max-w-xs truncate">{run.error || "-"}</td>
+                <td className="p-4 text-sm text-muted-foreground">{run.steps}</td>
+                <td className="p-4 text-sm text-muted-foreground">${(run.totalCost / 1_000_000).toFixed(4)}</td>
+                <td className="p-4 text-sm text-muted-foreground/70 max-w-xs truncate">{run.error || "-"}</td>
               </tr>
             ))}
             {runs.length === 0 && (
-              <tr><td colSpan={6} className="p-8 text-center text-gray-500">No runs yet. Create and trigger an agent.</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground/70">No runs yet. Create and trigger an agent.</td></tr>
             )}
           </tbody>
         </table>
@@ -154,31 +154,31 @@ export default function AgentActivity() {
 
       {/* Run Detail Panel */}
       {selectedRun && selectedRun.toolCalls && (
-        <div className="bg-[#111827] border border-gray-800 rounded-xl p-5">
-          <h2 className="text-lg font-semibold text-white mb-3">Step-by-Step Trace</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-lg font-semibold text-foreground mb-3">Step-by-Step Trace</h2>
           <div className="space-y-3">
             {(() => {
               try {
                 const calls = JSON.parse(selectedRun.toolCalls);
                 return calls.map((tc: any, i: number) => (
-                  <div key={i} className="bg-[#0a0a0f] border border-gray-800 rounded-lg p-4">
+                  <div key={i} className="bg-background border border-border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-[#00FFB2] font-mono">Step {i + 1}</span>
                       <span className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-400 rounded">{tc.name}</span>
-                      {tc.duration && <span className="text-xs text-gray-500">{tc.duration}ms</span>}
+                      {tc.duration && <span className="text-xs text-muted-foreground/70">{tc.duration}ms</span>}
                     </div>
                     {tc.params && Object.keys(tc.params).length > 0 && (
                       <div className="mb-2">
-                        <p className="text-xs text-gray-500 mb-1">Params:</p>
-                        <pre className="text-xs text-gray-400 font-mono bg-gray-900 p-2 rounded overflow-x-auto">
+                        <p className="text-xs text-muted-foreground/70 mb-1">Params:</p>
+                        <pre className="text-xs text-muted-foreground font-mono bg-gray-900 p-2 rounded overflow-x-auto">
                           {JSON.stringify(tc.params, null, 2)}
                         </pre>
                       </div>
                     )}
                     {tc.result && (
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Result:</p>
-                        <pre className="text-xs text-gray-400 font-mono bg-gray-900 p-2 rounded overflow-x-auto max-h-32">
+                        <p className="text-xs text-muted-foreground/70 mb-1">Result:</p>
+                        <pre className="text-xs text-muted-foreground font-mono bg-gray-900 p-2 rounded overflow-x-auto max-h-32">
                           {tc.result.slice(0, 500)}
                         </pre>
                       </div>
@@ -186,7 +186,7 @@ export default function AgentActivity() {
                     {tc.error && <p className="text-xs text-red-400 mt-1">Error: {tc.error}</p>}
                   </div>
                 ));
-              } catch { return <p className="text-gray-500 text-sm">Raw trace: {selectedRun.toolCalls?.slice(0, 500)}</p>; }
+              } catch { return <p className="text-muted-foreground/70 text-sm">Raw trace: {selectedRun.toolCalls?.slice(0, 500)}</p>; }
             })()}
           </div>
         </div>

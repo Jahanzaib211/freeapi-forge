@@ -50,8 +50,8 @@ export default function AuditLogPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
-          <p className="text-gray-400 mt-1">Immutable record of all system actions</p>
+          <h1 className="text-2xl font-bold text-foreground">Audit Logs</h1>
+          <p className="text-muted-foreground mt-1">Immutable record of all system actions</p>
         </div>
         <button
           onClick={loadLogs}
@@ -67,35 +67,35 @@ export default function AuditLogPage() {
           value={filter}
           onChange={e => setFilter(e.target.value)}
           placeholder="Filter by action..."
-          className="flex-1 max-w-md px-4 py-2 bg-[#111827] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#00FFB2]"
+          className="flex-1 max-w-md px-4 py-2 bg-card border border-gray-700 rounded-lg text-foreground placeholder-gray-500 focus:outline-none focus:border-[#00FFB2]"
         />
-        <span className="text-gray-500 text-sm self-center">{filtered.length} entries</span>
+        <span className="text-muted-foreground/70 text-sm self-center">{filtered.length} entries</span>
       </div>
 
       {/* Table */}
-      <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-800">
-              <th className="text-left text-xs text-gray-400 uppercase tracking-wider p-4">Time</th>
-              <th className="text-left text-xs text-gray-400 uppercase tracking-wider p-4">Action</th>
-              <th className="text-left text-xs text-gray-400 uppercase tracking-wider p-4">User</th>
-              <th className="text-left text-xs text-gray-400 uppercase tracking-wider p-4">Details</th>
+            <tr className="border-b border-border">
+              <th className="text-left text-xs text-muted-foreground uppercase tracking-wider p-4">Time</th>
+              <th className="text-left text-xs text-muted-foreground uppercase tracking-wider p-4">Action</th>
+              <th className="text-left text-xs text-muted-foreground uppercase tracking-wider p-4">User</th>
+              <th className="text-left text-xs text-muted-foreground uppercase tracking-wider p-4">Details</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-500">Loading...</td>
+                <td colSpan={4} className="p-8 text-center text-muted-foreground/70">Loading...</td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-500">No audit entries found</td>
+                <td colSpan={4} className="p-8 text-center text-muted-foreground/70">No audit entries found</td>
               </tr>
             ) : (
               filtered.map(log => (
-                <tr key={log.id} className="border-b border-gray-800/50 hover:bg-gray-800/20">
-                  <td className="p-4 text-sm text-gray-400">
+                <tr key={log.id} className="border-b border-border/50 hover:bg-gray-800/20">
+                  <td className="p-4 text-sm text-muted-foreground">
                     {new Date(log.createdAt).toLocaleString()}
                   </td>
                   <td className="p-4">
@@ -103,10 +103,10 @@ export default function AuditLogPage() {
                       {log.action}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-gray-400">
+                  <td className="p-4 text-sm text-muted-foreground">
                     {log.userId || "system"}
                   </td>
-                  <td className="p-4 text-sm text-gray-500 max-w-xs truncate">
+                  <td className="p-4 text-sm text-muted-foreground/70 max-w-xs truncate">
                     {log.details || "-"}
                   </td>
                 </tr>
@@ -121,15 +121,15 @@ export default function AuditLogPage() {
         <button
           onClick={() => setPage(Math.max(0, page - 1))}
           disabled={page === 0}
-          className="px-3 py-1 bg-gray-800 text-white rounded text-sm disabled:opacity-50"
+          className="px-3 py-1 bg-gray-800 text-foreground rounded text-sm disabled:opacity-50"
         >
           Previous
         </button>
-        <span className="px-3 py-1 text-gray-400 text-sm">Page {page + 1}</span>
+        <span className="px-3 py-1 text-muted-foreground text-sm">Page {page + 1}</span>
         <button
           onClick={() => setPage(page + 1)}
           disabled={filtered.length < 50}
-          className="px-3 py-1 bg-gray-800 text-white rounded text-sm disabled:opacity-50"
+          className="px-3 py-1 bg-gray-800 text-foreground rounded text-sm disabled:opacity-50"
         >
           Next
         </button>

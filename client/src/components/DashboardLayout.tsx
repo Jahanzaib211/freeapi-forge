@@ -58,6 +58,11 @@ import {
   GitCompare,
   HeartPulse,
   Webhook,
+  MessageCircle,
+  Bot,
+  Cable,
+  HardDrive,
+  Bell,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -81,8 +86,10 @@ const sidebarSections: Section[] = [
     items: [
       { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
+      { icon: MessageCircle, label: "Chat", path: "/chat" },
       { icon: Layers, label: "Inference Lab", path: "/inference" },
       { icon: Boxes, label: "Forge Builder", path: "/builder" },
+      { icon: Bot, label: "Agents Builder", path: "/agents" },
       { icon: Brain, label: "Agents", path: "/agentic" },
     ],
   },
@@ -91,6 +98,8 @@ const sidebarSections: Section[] = [
     items: [
       { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
       { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
+      { icon: Cable, label: "MCP Explorer", path: "/mcp-explorer" },
+      { icon: HardDrive, label: "My MCPs", path: "/my-mcps" },
       { icon: Zap, label: "Skills", path: "/skills" },
       { icon: Shield, label: "Guardrails", path: "/guardrails" },
       { icon: FileText, label: "Policies", path: "/guardrails" },
@@ -474,6 +483,15 @@ function DashboardLayoutContent({
                   )}
                 </button>
               )}
+              <button
+                className={`flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+                title="Notifications"
+              >
+                <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
+                {!isCollapsed && (
+                  <span className="text-sm text-muted-foreground">Notifications</span>
+                )}
+              </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -531,6 +549,9 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <button className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent relative">
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

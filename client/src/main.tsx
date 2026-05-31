@@ -7,6 +7,7 @@ import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
@@ -70,7 +71,9 @@ createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   </trpc.Provider>

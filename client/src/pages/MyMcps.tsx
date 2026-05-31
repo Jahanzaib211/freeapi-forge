@@ -70,8 +70,8 @@ export default function MyMcps() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">My MCP Servers</h1>
-          <p className="text-gray-400 mt-1">{mcps.length} installed. <a href="/mcp-explorer" className="text-[#00FFB2] hover:underline">Browse marketplace</a></p>
+          <h1 className="text-2xl font-bold text-foreground">My MCP Servers</h1>
+          <p className="text-muted-foreground mt-1">{mcps.length} installed. <a href="/mcp-explorer" className="text-[#00FFB2] hover:underline">Browse marketplace</a></p>
         </div>
       </div>
 
@@ -80,14 +80,14 @@ export default function MyMcps() {
           const u = usage[mcp.id] || {};
           const d = dailyUsage[mcp.id] || 0;
           return (
-            <div key={mcp.id} className="bg-[#111827] border border-gray-800 rounded-xl p-5">
+            <div key={mcp.id} className="bg-card border border-border rounded-xl p-5">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-white font-medium">{mcp.name}</h3>
+                    <h3 className="text-foreground font-medium">{mcp.name}</h3>
                     {statusBadge(mcp.status)}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground/70 mt-2">
                     <span>🛠️ {mcp.toolCount} tools</span>
                     <span>📞 {u.calls || 0} total calls</span>
                     <span>📊 {u.successRate ? `${u.successRate.toFixed(0)}% success` : "N/A"}</span>
@@ -111,7 +111,7 @@ export default function MyMcps() {
           );
         })}
         {mcps.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground/70">
             <p className="text-4xl mb-3">🔌</p>
             <p>No MCP servers installed yet.</p>
             <a href="/mcp-explorer" className="text-[#00FFB2] hover:underline mt-2 inline-block">Browse marketplace →</a>
