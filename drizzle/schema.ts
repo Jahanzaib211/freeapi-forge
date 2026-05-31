@@ -1,12 +1,61 @@
 import { integer, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-export const roleEnum = pgEnum("role", ["user", "admin"]);
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+export const roleEnum = pgEnum("role", ["user", "admin", "developer", "viewer", "api_user"]);
+export const tenantRoleEnum = pgEnum("tenantRole", ["owner", "admin", "member", "viewer"]);
+export const tenantStatusEnum = pgEnum("tenantStatus", ["active", "provisioning", "terminated", "suspended"]);
 
+// ─── TENANTS (multi-tenant core) ─────────────────────────────────────────────
+export const tenants = pgTable("tenants", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  ownerId: integer("ownerId").notNull(),
+  status: tenantStatusEnum("status").default("active").notNull(),
+  monthlyBudgetUsd: integer("monthlyBudgetUsd").default(100).notNull(),
+  maxProviders: integer("maxProviders").default(10).notNull(),
+  maxModels: integer("maxModels").default(50).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = typeof tenants.$inferInsert;
+
+// ─── TENANT USERS (membership) ───────────────────────────────────────────────
+export const tenantUsers = pgTable("tenantUsers", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  userId: integer("userId").notNull(),
+  role: tenantRoleEnum("role").default("member").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TenantUser = typeof tenantUsers.$inferSelect;
+export type InsertTenantUser = typeof tenantUsers.$inferInsert;
+
+// ─── SESSIONS (JWT refresh token storage) ────────────────────────────────────
+export const sessions = pgTable("sessions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: integer("userId").notNull(),
+  tenantId: integer("tenantId"),
+  roles: text("roles").array().notNull().default(["user"]),
+  refreshToken: varchar("refreshToken", { length: 512 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = typeof sessions.$inferInsert;
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  passwordHash: varchar("passwordHash", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -17,10 +66,12 @@ export const users = pgTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── TEAMS ───────────────────────────────────────────────────────────────────
 export const teams = pgTable("teams", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   ownerId: integer("ownerId").notNull(),
+  tenantId: integer("tenantId"),
   monthlyBudgetUsd: integer("monthlyBudgetUsd").default(10).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -29,9 +80,11 @@ export const teams = pgTable("teams", {
 export type Team = typeof teams.$inferSelect;
 export type InsertTeam = typeof teams.$inferInsert;
 
+// ─── API KEYS ────────────────────────────────────────────────────────────────
 export const apiKeys = pgTable("apiKeys", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   teamId: integer("teamId").notNull(),
+  tenantId: integer("tenantId"),
   keyHash: varchar("keyHash", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   lastUsedAt: timestamp("lastUsedAt"),
@@ -42,10 +95,12 @@ export const apiKeys = pgTable("apiKeys", {
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertApiKey = typeof apiKeys.$inferInsert;
 
+// ─── PROVIDERS ───────────────────────────────────────────────────────────────
 export const providers = pgTable("providers", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 64 }).notNull().unique(),
   litellmEndpoint: varchar("litellmEndpoint", { length: 512 }).notNull(),
+  tenantId: integer("tenantId"),
   enabled: integer("enabled").default(1).notNull(),
   qualityScore: integer("qualityScore").default(50).notNull(),
   latencyMs: integer("latencyMs").default(500).notNull(),
@@ -57,9 +112,11 @@ export const providers = pgTable("providers", {
 export type Provider = typeof providers.$inferSelect;
 export type InsertProvider = typeof providers.$inferInsert;
 
+// ─── REQUEST HISTORY ─────────────────────────────────────────────────────────
 export const requestHistory = pgTable("requestHistory", {
   id: varchar("id", { length: 64 }).primaryKey(),
   teamId: integer("teamId").notNull(),
+  tenantId: integer("tenantId"),
   providerId: integer("providerId"),
   taskType: varchar("taskType", { length: 32 }).notNull(),
   inputTokens: integer("inputTokens").default(0).notNull(),
@@ -74,9 +131,11 @@ export const requestHistory = pgTable("requestHistory", {
 export type RequestHistory = typeof requestHistory.$inferSelect;
 export type InsertRequestHistory = typeof requestHistory.$inferInsert;
 
+// ─── BUDGET LIMITS ───────────────────────────────────────────────────────────
 export const budgetLimits = pgTable("budgetLimits", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   teamId: integer("teamId").notNull().unique(),
+  tenantId: integer("tenantId"),
   monthlyLimitUsd: integer("monthlyLimitUsd").default(10).notNull(),
   currentSpendUsd: integer("currentSpendUsd").default(0).notNull(),
   monthYear: varchar("monthYear", { length: 7 }).notNull(),
@@ -87,10 +146,12 @@ export const budgetLimits = pgTable("budgetLimits", {
 export type BudgetLimit = typeof budgetLimits.$inferSelect;
 export type InsertBudgetLimit = typeof budgetLimits.$inferInsert;
 
+// ─── AUDIT LOGS ──────────────────────────────────────────────────────────────
 export const auditLogs = pgTable("auditLogs", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("userId"),
   teamId: integer("teamId"),
+  tenantId: integer("tenantId"),
   action: varchar("action", { length: 255 }).notNull(),
   details: text("details"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -99,13 +160,14 @@ export const auditLogs = pgTable("auditLogs", {
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
-// Virtual Keys
+// ─── VIRTUAL KEYS ────────────────────────────────────────────────────────────
 export const virtualKeys = pgTable("virtualKeys", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   keyHash: varchar("keyHash", { length: 255 }).notNull().unique(),
   keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(),
   teamId: integer("teamId").default(1).notNull(),
+  tenantId: integer("tenantId"),
   budgetLimitUsd: integer("budgetLimitUsd").default(10).notNull(),
   rateLimitTPM: integer("rateLimitTPM").default(100000).notNull(),
   rateLimitRPM: integer("rateLimitRPM").default(1000).notNull(),
@@ -121,11 +183,12 @@ export const virtualKeys = pgTable("virtualKeys", {
 export type VirtualKey = typeof virtualKeys.$inferSelect;
 export type InsertVirtualKey = typeof virtualKeys.$inferInsert;
 
-// Organizations
+// ─── ORGANIZATIONS ───────────────────────────────────────────────────────────
 export const organizations = pgTable("organizations", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   ownerId: integer("ownerId").notNull(),
+  tenantId: integer("tenantId"),
   budgetLimitUsd: integer("budgetLimitUsd").default(100).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -133,10 +196,11 @@ export const organizations = pgTable("organizations", {
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
 
-// Access Groups
+// ─── ACCESS GROUPS ───────────────────────────────────────────────────────────
 export const accessGroups = pgTable("accessGroups", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
+  tenantId: integer("tenantId"),
   models: text("models").array(),
   mcpServers: text("mcpServers").array(),
   agents: text("agents").array(),
@@ -146,12 +210,13 @@ export const accessGroups = pgTable("accessGroups", {
 export type AccessGroup = typeof accessGroups.$inferSelect;
 export type InsertAccessGroup = typeof accessGroups.$inferInsert;
 
-// MCP Servers
+// ─── MCP SERVERS ─────────────────────────────────────────────────────────────
 export const mcpServers = pgTable("mcpServers", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   transport: varchar("transport", { length: 32 }).notNull().default("sse"),
   url: varchar("url", { length: 1024 }).notNull(),
+  tenantId: integer("tenantId"),
   authConfig: text("authConfig"),
   status: varchar("status", { length: 32 }).default("disconnected").notNull(),
   toolCount: integer("toolCount").default(0).notNull(),
@@ -162,13 +227,14 @@ export const mcpServers = pgTable("mcpServers", {
 export type McpServer = typeof mcpServers.$inferSelect;
 export type InsertMcpServer = typeof mcpServers.$inferInsert;
 
-// Skills
+// ─── SKILLS ──────────────────────────────────────────────────────────────────
 export const skills = pgTable("skills", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull().unique(),
   description: text("description"),
   path: varchar("path", { length: 1024 }).notNull(),
   category: varchar("category", { length: 64 }).default("general").notNull(),
+  tenantId: integer("tenantId"),
   enabled: integer("enabled").default(1).notNull(),
   lastExecuted: timestamp("lastExecuted"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -177,12 +243,13 @@ export const skills = pgTable("skills", {
 export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = typeof skills.$inferInsert;
 
-// Guardrails
+// ─── GUARDRAILS ──────────────────────────────────────────────────────────────
 export const guardrails = pgTable("guardrails", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   type: varchar("type", { length: 32 }).notNull().default("pre_call"),
   config: text("config"),
+  tenantId: integer("tenantId"),
   enabled: integer("enabled").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -190,10 +257,11 @@ export const guardrails = pgTable("guardrails", {
 export type Guardrail = typeof guardrails.$inferSelect;
 export type InsertGuardrail = typeof guardrails.$inferInsert;
 
-// Policies
+// ─── POLICIES ────────────────────────────────────────────────────────────────
 export const policies = pgTable("policies", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
+  tenantId: integer("tenantId"),
   guardrailIds: text("guardrailIds").array(),
   teamIds: text("teamIds").array(),
   keyIds: text("keyIds").array(),
@@ -204,7 +272,7 @@ export const policies = pgTable("policies", {
 export type Policy = typeof policies.$inferSelect;
 export type InsertPolicy = typeof policies.$inferInsert;
 
-// Agents
+// ─── AGENTS ──────────────────────────────────────────────────────────────────
 export const agents = pgTable("agents", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -212,6 +280,7 @@ export const agents = pgTable("agents", {
   model: varchar("model", { length: 255 }),
   tools: text("tools").array(),
   mcpServerIds: text("mcpServerIds").array(),
+  tenantId: integer("tenantId"),
   budgetUsd: integer("budgetUsd").default(10).notNull(),
   enabled: integer("enabled").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -220,11 +289,12 @@ export const agents = pgTable("agents", {
 export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = typeof agents.$inferInsert;
 
-// Usage Logs
+// ─── USAGE LOGS ──────────────────────────────────────────────────────────────
 export const usageLogs = pgTable("usageLogs", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   virtualKeyId: integer("virtualKeyId"),
   teamId: integer("teamId").default(1),
+  tenantId: integer("tenantId"),
   model: varchar("model", { length: 255 }),
   provider: varchar("provider", { length: 128 }),
   promptTokens: integer("promptTokens").default(0).notNull(),
@@ -240,12 +310,13 @@ export const usageLogs = pgTable("usageLogs", {
 export type UsageLog = typeof usageLogs.$inferSelect;
 export type InsertUsageLog = typeof usageLogs.$inferInsert;
 
-// System Events (error logging)
+// ─── SYSTEM EVENTS ───────────────────────────────────────────────────────────
 export const systemEvents = pgTable("systemEvents", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   level: varchar("level", { length: 16 }).notNull().default("info"),
   source: varchar("source", { length: 128 }).notNull(),
   message: text("message").notNull(),
+  tenantId: integer("tenantId"),
   stackTrace: text("stackTrace"),
   metadata: text("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -254,13 +325,14 @@ export const systemEvents = pgTable("systemEvents", {
 export type SystemEvent = typeof systemEvents.$inferSelect;
 export type InsertSystemEvent = typeof systemEvents.$inferInsert;
 
-// Custom Providers (Paste-Any-API)
+// ─── CUSTOM PROVIDERS ────────────────────────────────────────────────────────
 export const customProviders = pgTable("customProviders", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   apiUrl: varchar("apiUrl", { length: 1024 }).notNull(),
   apiKey: varchar("apiKey", { length: 1024 }).notNull(),
   models: text("models").notNull(),
+  tenantId: integer("tenantId"),
   enabled: integer("enabled").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -268,7 +340,7 @@ export const customProviders = pgTable("customProviders", {
 export type CustomProvider = typeof customProviders.$inferSelect;
 export type InsertCustomProvider = typeof customProviders.$inferInsert;
 
-// Prompt Library
+// ─── PROMPT LIBRARY ──────────────────────────────────────────────────────────
 export const promptLibrary = pgTable("promptLibrary", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -278,6 +350,7 @@ export const promptLibrary = pgTable("promptLibrary", {
   version: integer("version").default(1).notNull(),
   forkedFrom: integer("forkedFrom"),
   createdBy: integer("createdBy"),
+  tenantId: integer("tenantId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -285,13 +358,14 @@ export const promptLibrary = pgTable("promptLibrary", {
 export type PromptLibrary = typeof promptLibrary.$inferSelect;
 export type InsertPromptLibrary = typeof promptLibrary.$inferInsert;
 
-// Webhooks
+// ─── WEBHOOKS ────────────────────────────────────────────────────────────────
 export const webhooks = pgTable("webhooks", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
   url: varchar("url", { length: 1024 }).notNull(),
   secret: varchar("secret", { length: 255 }),
   events: text("events").array(),
+  tenantId: integer("tenantId"),
   enabled: integer("enabled").default(1).notNull(),
   lastTriggered: timestamp("lastTriggered"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -300,11 +374,13 @@ export const webhooks = pgTable("webhooks", {
 export type Webhook = typeof webhooks.$inferSelect;
 export type InsertWebhook = typeof webhooks.$inferInsert;
 
+// ─── CACHE ENTRIES ───────────────────────────────────────────────────────────
 export const cacheEntries = pgTable("cacheEntries", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   key: varchar("key", { length: 64 }).notNull().unique(),
   response: text("response").notNull(),
   model: varchar("model", { length: 255 }).notNull(),
+  tenantId: integer("tenantId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
 });

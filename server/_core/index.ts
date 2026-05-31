@@ -21,6 +21,11 @@ import { getDb } from "../db";
 import { providerService } from "../services/provider_service";
 import { getResourceCatalog } from "../services/resource_catalog";
 import { setupTerminalWebSocket } from "../routers/sandbox_router";
+import { authService } from "../services/auth-service";
+import { tenantResolver, type TenantRequest } from "../middleware/tenant-resolver";
+import { authMiddleware, type AuthRequest } from "../middleware/rbac";
+import { auditMiddleware } from "../middleware/audit-logger";
+import { eventBus } from "../services/event-bus";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -42,6 +47,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize event bus
+  eventBus.init(process.env.REDIS_URL);
+
   const app = express();
   const server = createServer(app);
 
@@ -92,6 +100,81 @@ async function startServer() {
       res.status(500).json({ error: "Internal server error" });
     }
   );
+
+  // Auth middleware (runs on every request)
+  app.use(authMiddleware as any);
+
+  // Tenant resolver middleware
+  app.use(tenantResolver as any);
+
+  // Audit logging middleware
+  app.use(auditMiddleware as any);
+
+  // Auth routes
+  app.post("/api/auth/register", express.json(), async (req, res) => {
+    try {
+      const { email, password, name } = req.body;
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "email, password, and name are required" });
+      }
+      const result = await authService.register({ email, password, name });
+      res.status(201).json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/auth/login", express.json(), async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "email and password are required" });
+      }
+      const result = await authService.login({ email, password });
+      res.json(result);
+    } catch (err: any) {
+      res.status(401).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/auth/refresh", express.json(), async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(400).json({ error: "refreshToken is required" });
+      }
+      const tokens = await authService.refresh(refreshToken);
+      res.json(tokens);
+    } catch (err: any) {
+      res.status(401).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/auth/logout", express.json(), async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.json({ success: true });
+    }
+  });
+
+  app.get("/api/auth/me", async (req: AuthRequest, res) => {
+    if (!req.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    res.json({
+      id: req.userId,
+      email: req.userEmail,
+      name: req.userName,
+      role: req.userRole,
+      tenantId: req.tenantId,
+      tenantRole: req.tenantRole,
+    });
+  });
 
   // Mock auth (DEV only)
   if (process.env.NODE_ENV !== "production") {
@@ -423,7 +506,13 @@ async function startServer() {
     wss.clients.forEach(client => client.close(1001, "Server shutting down"));
     wss.close();
 
-    // 3. Close Redis
+    // 3. Close event bus
+    try {
+      await eventBus.close();
+      console.log("[Shutdown] Event bus closed");
+    } catch {}
+
+    // 4. Close Redis
     try {
       await providerService.closeRedis();
       console.log("[Shutdown] Redis closed");
