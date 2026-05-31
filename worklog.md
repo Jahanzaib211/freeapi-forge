@@ -71,3 +71,53 @@ Stage Summary:
 - Node IDs: discord-api (Layer 0, external), discord-integration (Layer 3, planned, BSL 1.1)
 - Files modified: src/lib/forge-tree-data.ts, src/app/page.tsx
 - Files created: src/components/forge/discord-section.tsx
+
+---
+Task ID: 3
+Agent: webDevReview-cron
+Task: QA testing, styling improvements, add missing sections
+
+Work Log:
+- Performed full QA using agent-browser (4 screenshots: hero, mid, discord, bottom)
+- VLM analysis identified: contrast issues on badges, inconsistent card borders, weak nav hover states, missing sections
+- Fixed hero section: added animated counting numbers on stat cards, improved text contrast with font-semibold + text-foreground/90, added hover glow effect on stat cards
+- Fixed navbar: improved hover state from generic gray to forge-green (#00FFB2) highlight with accent background, added rounded-md transitions, shortened nav labels to fit all 11 sections
+- Fixed version label: updated to v2.0, added opacity to subtitle
+- Added global text color: text-[#e0e0e0] for slightly brighter default text
+- Fixed footer spacing: increased from h-8 to h-12 for proper clearance
+- Added 5 previously built but unlinked sections to page.tsx:
+  - Docker Stack Architecture (docker-stack.tsx)
+  - Forge-to-Forge P2P Network (p2p-network.tsx)
+  - Pricing & Licensing (pricing-section.tsx)
+  - Launch Rewards Program (launch-rewards.tsx)
+  - Mirror Test — Self-Hosting Proof (mirror-test.tsx)
+- Updated nav items from 7 to 11 sections: Graph, Layers, Build, Discord, Docker, P2P, Pricing, Rewards, Database, SPOF, Tech
+- All ESLint passes clean
+- Dev server: 200 OK, no console errors
+- VLM confirmed dark theme looks polished and consistent
+
+Stage Summary:
+- Page now has 11 full sections (was 7) — all previously built components now visible
+- Animated stat counters add visual polish
+- Nav hover effects use forge-green accent for brand consistency
+- Total page sections: Hero → Overview → Graph → Layers → Build → Discord → Docker → P2P → Pricing → Rewards → Mirror → Database → SPOF → Tech
+- No runtime errors, no console errors, lint clean
+
+---
+CURRENT PROJECT STATUS
+========================
+- Forge Studio Dependency Tree v2.0 is a comprehensive interactive visualization
+- 56 nodes across 9 layers, 135 edges, 21 DB tables
+- All 13 component files built: arch-graph, layer-breakdown, build-order, detail-sections (3 exports), discord-section, docker-stack, p2p-network, pricing-section, launch-rewards, mirror-test
+- All components rendered on page with nav links
+- Dark theme with #00FFB2 forge-green accent, animated elements, responsive design
+
+UNRESOLVED ISSUES / NEXT PRIORITIES
+====================================
+1. (Low) Hero description still references old numbers in one spot - dynamic values from TREE_STATS fix this
+2. (Low) Docker stack component mentions "optional — being removed" for LiteLLM env vars - should say "optional" only (LiteLLM is optional, not removed)
+3. (Low) Mobile menu doesn't have scroll anchors for smooth scroll behavior
+4. (Medium) Build phases don't include Discord integration, Docker Stack, or P2P in the timeline
+5. (Medium) The pricing-section.tsx has a custom Shield SVG component that duplicates Lucide - should use Lucide import instead
+6. (Medium) No "back to top" button for long-scroll pages
+7. (Low) Section dividers could use subtle animation on scroll-into-view

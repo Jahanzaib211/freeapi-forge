@@ -12,6 +12,11 @@ import LayerBreakdown from '@/components/forge/layer-breakdown';
 import BuildOrder from '@/components/forge/build-order';
 import { DatabaseSchemas, SpofAnalysis, TechMatrix } from '@/components/forge/detail-sections';
 import DiscordSection from '@/components/forge/discord-section';
+import DockerStack from '@/components/forge/docker-stack';
+import P2PNetwork from '@/components/forge/p2p-network';
+import PricingSection from '@/components/forge/pricing-section';
+import LaunchRewards from '@/components/forge/launch-rewards';
+import MirrorTest from '@/components/forge/mirror-test';
 import {
   AlertTriangle, Shield, Cpu, Database, Globe, Layers, Zap,
   Terminal, HardDrive, Server, Network, GitBranch, Boxes,
@@ -31,13 +36,17 @@ function Navbar() {
   }, []);
 
   const navItems = [
-    { label: 'Architecture Graph', href: '#graph' },
+    { label: 'Graph', href: '#graph' },
     { label: 'Layers', href: '#layers' },
-    { label: 'Build Order', href: '#build' },
+    { label: 'Build', href: '#build' },
     { label: 'Discord', href: '#discord' },
+    { label: 'Docker', href: '#docker' },
+    { label: 'P2P', href: '#p2p' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'Rewards', href: '#rewards' },
     { label: 'Database', href: '#database' },
-    { label: 'SPOF Analysis', href: '#spof' },
-    { label: 'Tech Matrix', href: '#tech' },
+    { label: 'SPOF', href: '#spof' },
+    { label: 'Tech', href: '#tech' },
   ];
 
   return (
@@ -51,7 +60,7 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground ml-2 hidden sm:inline">Dependency Tree v1.0</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.0</span>
           </div>
         </div>
 
@@ -61,7 +70,7 @@ function Navbar() {
             <a
               key={item.href}
               href={item.href}
-              className="px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded transition-colors"
+              className="px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-[#00FFB2] hover:bg-[#00FFB2]/5 rounded-md transition-all duration-200"
             >
               {item.label}
             </a>
@@ -127,11 +136,12 @@ function Hero() {
             <span className="text-[#00FFB2]">Dependency Tree</span>
           </h1>
           <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Complete architecture map: <span className="text-foreground/80">50+ components</span>,{' '}
-            <span className="text-foreground/80">106 connections</span>,{' '}
-            <span className="text-foreground/80">9 layers</span>,{' '}
-            <span className="text-foreground/80">11 database tables</span>,{' '}
-            <span className="text-foreground/80">10 build phases</span>.
+            Complete architecture map: <span className="text-foreground/90 font-semibold">{TREE_STATS.totalNodes} components</span>,{' '}
+            <span className="text-foreground/90 font-semibold">{TREE_STATS.totalEdges} connections</span>,{' '}
+            <span className="text-foreground/90 font-semibold">{TREE_STATS.totalLayers} layers</span>,{' '}
+            <span className="text-foreground/90 font-semibold">{TREE_STATS.dbTables} database tables</span>,{' '}
+            <span className="text-foreground/90 font-semibold">Discord integration</span>,{' '}
+            <span className="text-foreground/90 font-semibold">P2P marketplace</span>.
             <br className="hidden md:block" />
             From Ubuntu kernel to cloud users — every dependency mapped, every SPOF identified, every risk quantified.
           </p>
@@ -152,17 +162,7 @@ function Hero() {
             { label: 'DB Tables', value: TREE_STATS.dbTables, icon: <Database size={16} />, color: '#F59E0B' },
             { label: 'Build Weeks', value: TREE_STATS.totalBuildWeeks, icon: <Clock size={16} />, color: '#F472B6' },
           ].map((stat) => (
-            <Card key={stat.label} className="bg-card/60 backdrop-blur border-border hover:border-opacity-80 transition-all group">
-              <CardContent className="p-3 text-center">
-                <div className="flex justify-center mb-1" style={{ color: stat.color }}>
-                  {stat.icon}
-                </div>
-                <div className="text-xl md:text-2xl font-black" style={{ color: stat.color }}>
-                  {stat.value}
-                </div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground">{stat.label}</div>
-              </CardContent>
-            </Card>
+            <AnimatedStatCard key={stat.label} stat={stat} />
           ))}
         </motion.div>
 
@@ -267,6 +267,56 @@ function OverviewStrip() {
   );
 }
 
+// ─── ANIMATED STAT CARD ───────────────────────────────────────────
+function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon: React.ReactNode; color: string } }) {
+  const [count, setCount] = useState(0);
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    const duration = 1200;
+    const steps = 30;
+    const increment = stat.value / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= stat.value) {
+        setCount(stat.value);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [stat.value]);
+
+  return (
+    <Card
+      className="bg-card/60 backdrop-blur border-border transition-all duration-300 cursor-default"
+      style={{
+        boxShadow: hovered ? `0 0 20px ${stat.color}15, 0 0 40px ${stat.color}08` : 'none',
+        borderColor: hovered ? `${stat.color}40` : undefined,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <CardContent className="p-3 text-center">
+        <motion.div
+          className="flex justify-center mb-1"
+          style={{ color: stat.color }}
+          animate={{ scale: hovered ? 1.2 : 1 }}
+          transition={{ type: 'spring', stiffness: 400 }}
+        >
+          {stat.icon}
+        </motion.div>
+        <div className="text-xl md:text-2xl font-black tabular-nums" style={{ color: stat.color }}>
+          {count}
+        </div>
+        <div className="text-[9px] md:text-[10px] text-muted-foreground font-medium">{stat.label}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── FOOTER ──────────────────────────────────────────────────────────────
 function Footer() {
   return (
@@ -302,7 +352,7 @@ function Footer() {
 // ─── MAIN PAGE ──────────────────────────────────────────────────────────
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0f] bg-dots">
+    <div className="min-h-screen flex flex-col bg-[#0a0a0f] bg-dots text-[#e0e0e0]">
       <Navbar />
 
       <main className="flex-1">
@@ -347,6 +397,41 @@ export default function Home() {
 
         <SectionDivider />
 
+        {/* Docker Stack */}
+        <section id="docker" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <DockerStack />
+        </section>
+
+        <SectionDivider />
+
+        {/* P2P Network */}
+        <section id="p2p" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <P2PNetwork />
+        </section>
+
+        <SectionDivider />
+
+        {/* Pricing & Licensing */}
+        <section id="pricing" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <PricingSection />
+        </section>
+
+        <SectionDivider />
+
+        {/* Launch Rewards */}
+        <section id="rewards" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <LaunchRewards />
+        </section>
+
+        <SectionDivider />
+
+        {/* Mirror Test */}
+        <section id="mirror" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <MirrorTest />
+        </section>
+
+        <SectionDivider />
+
         {/* Database Schemas */}
         <section id="database" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
           <DatabaseSchemas />
@@ -367,7 +452,7 @@ export default function Home() {
         </section>
 
         {/* Bottom spacing for footer */}
-        <div className="h-8" />
+        <div className="h-12" />
       </main>
 
       <Footer />
