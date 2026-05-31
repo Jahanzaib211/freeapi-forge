@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import { createServer } from "http";
+import { loadConfig, getConfig, isFeatureEnabled } from "./forge-config-types";
 import net from "net";
 import { WebSocketServer } from "ws";
 import Redis from "ioredis";
@@ -47,6 +48,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Load Soul Config
+  const config = loadConfig();
+  console.log(`[Forge] ${config.studio.name} v${config.studio.version} starting...`);
+
   // Initialize event bus
   eventBus.init(process.env.REDIS_URL);
 
@@ -269,10 +274,13 @@ async function startServer() {
     }
 
     const statusCode = overallStatus === "healthy" ? 200 : overallStatus === "degraded" ? 200 : 503;
+    const cfg = getConfig();
     res.status(statusCode).json({
       status: overallStatus,
-      version: "3.0.0",
+      version: cfg.studio.version,
+      environment: cfg.studio.environment,
       uptime: process.uptime(),
+      features: cfg.features,
       checks,
     });
   });
