@@ -59,6 +59,15 @@ async function startServer() {
     console.warn("[Skills] Auto-discovery failed:", err.message);
   }
 
+  // Start agent scheduler
+  try {
+    const { agentScheduler } = await import("../services/agent-scheduler");
+    agentScheduler.start();
+    console.log("[Agent] Scheduler started");
+  } catch (err: any) {
+    console.warn("[Agent] Scheduler failed to start:", err.message);
+  }
+
   const app = express();
   const server = createServer(app);
 

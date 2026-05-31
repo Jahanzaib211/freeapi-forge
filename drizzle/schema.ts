@@ -272,18 +272,32 @@ export const policies = pgTable("policies", {
 export type Policy = typeof policies.$inferSelect;
 export type InsertPolicy = typeof policies.$inferInsert;
 
-// ─── AGENTS ──────────────────────────────────────────────────────────────────
+// ─── AGENTS (Agent Builder — autonomous agents with ReAct loop) ────────────
+export const agentTypeEnum = pgEnum("agentType", ["chat", "workflow", "monitor", "data", "orchestrator"]);
+export const agentStatusEnum = pgEnum("agentStatus", ["active", "paused", "error", "creating"]);
+
 export const agents = pgTable("agents", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  type: agentTypeEnum("type").notNull(),
+  description: text("description"),
   systemPrompt: text("systemPrompt"),
-  model: varchar("model", { length: 255 }),
+  model: varchar("model", { length: 255 }).default("fast-8b"),
   tools: text("tools").array(),
   mcpServerIds: text("mcpServerIds").array(),
-  tenantId: integer("tenantId"),
+  config: text("config").notNull(),
+  status: agentStatusEnum("status").default("creating").notNull(),
+  version: integer("version").default(1).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  nextRunAt: timestamp("nextRunAt"),
+  totalRuns: integer("totalRuns").default(0).notNull(),
+  totalCost: integer("totalCost").default(0).notNull(),
   budgetUsd: integer("budgetUsd").default(10).notNull(),
   enabled: integer("enabled").default(1).notNull(),
+  createdBy: integer("createdBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Agent = typeof agents.$inferSelect;
@@ -475,3 +489,49 @@ export const discordConfigs = pgTable("discordConfigs", {
 
 export type DiscordConfig = typeof discordConfigs.$inferSelect;
 export type InsertDiscordConfig = typeof discordConfigs.$inferInsert;
+
+// ─── AGENT RUNS ──────────────────────────────────────────────────────────────
+export const agentRuns = pgTable("agentRuns", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  agentId: integer("agentId").notNull(),
+  tenantId: integer("tenantId").notNull(),
+  trigger: varchar("trigger", { length: 32 }).notNull(),
+  status: varchar("status", { length: 32 }).default("running").notNull(),
+  steps: integer("steps").default(0).notNull(),
+  toolCalls: text("toolCalls"),
+  totalCost: integer("totalCost").default(0).notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  error: text("error"),
+});
+
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertAgentRun = typeof agentRuns.$inferInsert;
+
+// ─── AGENT MEMORIES ──────────────────────────────────────────────────────────
+export const agentMemories = pgTable("agentMemories", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  agentId: integer("agentId").notNull(),
+  role: varchar("role", { length: 16 }).notNull(),
+  content: text("content").notNull(),
+  tokens: integer("tokens").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AgentMemory = typeof agentMemories.$inferSelect;
+export type InsertAgentMemory = typeof agentMemories.$inferInsert;
+
+// ─── TOOL APPROVALS ──────────────────────────────────────────────────────────
+export const toolApprovals = pgTable("toolApprovals", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  agentRunId: integer("agentRunId").notNull(),
+  toolName: varchar("toolName", { length: 255 }).notNull(),
+  params: text("params"),
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  reviewedBy: integer("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ToolApproval = typeof toolApprovals.$inferSelect;
+export type InsertToolApproval = typeof toolApprovals.$inferInsert;

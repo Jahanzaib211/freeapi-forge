@@ -60,6 +60,7 @@ import { chatRouter } from "./routers/chat";
 import { budgetRouter } from "./routers/budget";
 import { ragRouter } from "./routers/rag";
 import { discordRouter } from "./routers/discord";
+import { agentRouter as agentBuilderRouter } from "./routers/agents";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -463,6 +464,9 @@ export const appRouter = router({
 
   // Discord bridge
   discord: discordRouter,
+
+  // Agent Builder
+  agentBuilder: agentBuilderRouter,
 });
 
 export type AppRouter = typeof appRouter;

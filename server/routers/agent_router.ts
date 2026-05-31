@@ -47,7 +47,17 @@ export const agentRouter = router({
 
       const result = await db
         .insert(agents)
-        .values(input)
+        .values({
+          ...input,
+          tenantId: 1,
+          type: "chat",
+          config: JSON.stringify({
+            triggers: [{ type: "manual" }],
+            llm: { model: input.model || "fast-8b", temperature: 0.7, maxTokens: 2048 },
+            memory: { contextWindow: 50, persistentMemory: true },
+            guardrails: { maxSteps: 10, maxRuntimeSec: 60, maxBudgetRun: 0.5, requireApproval: [], scope: [] },
+          }),
+        })
         .returning({ id: agents.id });
 
       return { id: result[0].id };
