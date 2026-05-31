@@ -40,3 +40,34 @@ Stage Summary:
   - src/app/page.tsx (main page assembly)
   - src/app/globals.css (updated theme)
   - src/app/layout.tsx (updated metadata)
+
+---
+Task ID: 2
+Agent: main
+Task: Integrate Discord API into Forge Studio dependency tree with full automated Discord control
+
+Work Log:
+- Added discord-api node (Layer 0: External Integrations) — Discord REST API, WebSocket Gateway, Interactions API, Webhooks
+- Added discord-integration node (Layer 3: Platform Services) — Full automated Discord control: server mgmt, bot commands, AI chat, webhooks, role automation, event alerts
+- Added 8 new edges (e128-e135): Discord API → Integration → Express, PostgreSQL, Redis, WebSocket, LLM Proxy, Web UI, Forge Builder
+- Added 2 new DB tables: discord_configs (bot configuration, server connections, channel mappings) and discord_logs (immutable audit log)
+- Updated Layer 0 and Layer 3 subtitles to include Discord
+- Created discord-section.tsx component with:
+  - Overview banner with capability badges
+  - 7-step 1-click setup flow diagram
+  - 6 core capability cards (Server Management, Bot Control, AI Chat Bridge, Webhook Automation, Role Automation, Real-time Bridge)
+  - 10 slash commands registry table with permissions
+  - 9-channel architecture with bridge indicators
+  - 6 security measures (token encryption, command audit, rate limiting, permission checks, IP whitelist, content filter)
+  - 9-item dependency map
+  - 2 DB table schemas with column definitions
+- Updated page.tsx: added Discord nav link, Discord section placement between Build Order and Database
+- All lint passes clean, dev server 200 OK
+
+Stage Summary:
+- Discord API fully integrated into Forge Studio dependency tree
+- Total: 56 nodes, 135 edges, 9 layers, 21 DB tables
+- Discord section features: 6 capabilities, 10 commands, 9 channels, 6 security measures
+- Node IDs: discord-api (Layer 0, external), discord-integration (Layer 3, planned, BSL 1.1)
+- Files modified: src/lib/forge-tree-data.ts, src/app/page.tsx
+- Files created: src/components/forge/discord-section.tsx

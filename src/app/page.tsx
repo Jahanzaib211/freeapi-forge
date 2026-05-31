@@ -11,11 +11,12 @@ import ArchGraph from '@/components/forge/arch-graph';
 import LayerBreakdown from '@/components/forge/layer-breakdown';
 import BuildOrder from '@/components/forge/build-order';
 import { DatabaseSchemas, SpofAnalysis, TechMatrix } from '@/components/forge/detail-sections';
+import DiscordSection from '@/components/forge/discord-section';
 import {
   AlertTriangle, Shield, Cpu, Database, Globe, Layers, Zap,
   Terminal, HardDrive, Server, Network, GitBranch, Boxes,
   Activity, BarChart3, Clock, CheckCircle2, ExternalLink,
-  ArrowDown, Menu, X, ChevronDown
+  ArrowDown, Menu, X, ChevronDown, MessageSquare
 } from 'lucide-react';
 
 // ─── NAVBAR ──────────────────────────────────────────────────────────────
@@ -33,6 +34,7 @@ function Navbar() {
     { label: 'Architecture Graph', href: '#graph' },
     { label: 'Layers', href: '#layers' },
     { label: 'Build Order', href: '#build' },
+    { label: 'Discord', href: '#discord' },
     { label: 'Database', href: '#database' },
     { label: 'SPOF Analysis', href: '#spof' },
     { label: 'Tech Matrix', href: '#tech' },
@@ -334,6 +336,13 @@ export default function Home() {
         {/* Build Order */}
         <section id="build" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
           <BuildOrder />
+        </section>
+
+        <SectionDivider />
+
+        {/* Discord Integration */}
+        <section id="discord" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+          <DiscordSection />
         </section>
 
         <SectionDivider />

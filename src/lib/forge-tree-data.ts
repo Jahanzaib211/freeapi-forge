@@ -66,10 +66,10 @@ export interface DBTable {
 // LAYERS (top to bottom: user-facing → infrastructure)
 // ============================================================================
 export const LAYERS: ForgeLayer[] = [
-  { id: 0, name: 'External Integrations', subtitle: 'Stripe · GitHub API · MCP Registries · LLM Providers · Cloud Users', color: '#A78BFA', bgColor: 'rgba(167,139,250,0.06)' },
+  { id: 0, name: 'External Integrations', subtitle: 'Stripe · GitHub API · MCP Registries · LLM Providers · Cloud Users · Discord API', color: '#A78BFA', bgColor: 'rgba(167,139,250,0.06)' },
   { id: 1, name: 'User Interfaces', subtitle: 'Web UI React 19 · TUI Go · CLI · Browser Extension', color: '#F472B6', bgColor: 'rgba(244,114,182,0.06)' },
   { id: 2, name: 'Application Logic', subtitle: 'Forge Builder · Tasks/Rewards · Launch Rewards · P2P · Flywheel · Mirror Test', color: '#34D399', bgColor: 'rgba(52,211,153,0.06)' },
-  { id: 3, name: 'Platform Services', subtitle: 'AI Lab Hub · MCP Explorer · Vault · GitHub Explorer · Resource Mgr · Telemetry · Security · Billing', color: '#38BDF8', bgColor: 'rgba(56,189,248,0.06)' },
+  { id: 3, name: 'Platform Services', subtitle: 'AI Lab Hub · MCP Explorer · Vault · GitHub Explorer · Resource Mgr · Telemetry · Security · Billing · Discord Integration', color: '#38BDF8', bgColor: 'rgba(56,189,248,0.06)' },
   { id: 4, name: 'MCP Fabric', subtitle: 'MCP Host · MCP Server/Forge · /mcp/sse · External Clients', color: '#C084FC', bgColor: 'rgba(192,132,252,0.06)' },
   { id: 5, name: 'Core Engine', subtitle: 'Express · tRPC · WebSocket · REST · LLM Proxy · Circuit Breaker · Fallback Router · JWT · Discoverer · System Monitor · HuggingFace · Load Balancer · Process Mgr · Error Logger · Analytics · Guardrails', color: '#00FFB2', bgColor: 'rgba(0,255,178,0.06)' },
   { id: 6, name: 'Rust Runtime', subtitle: 'forge-resource binary: eBPF · VRAM defrag · GPU stats · process control', color: '#DEA584', bgColor: 'rgba(222,165,132,0.06)' },
@@ -122,6 +122,14 @@ export const NODES: ForgeNode[] = [
     tech: ['Browser', 'HTTPS', 'CDN'], language: 'external', status: 'external',
     risk: 'low', spof: false,
     dependsOn: [], providesTo: ['web-ui', 'tui', 'cli']
+  },
+  {
+    id: 'discord-api', name: 'Discord API', shortName: 'Discord',
+    layer: 0, description: 'Full Discord bot API: servers, channels, roles, webhooks, slash commands, threads, interactions',
+    tech: ['Discord.js', 'REST API', 'WebSocket Gateway', 'Interactions API', 'Webhooks'],
+    language: 'external', status: 'external',
+    risk: 'medium', spof: false, port: 'discord.com/api',
+    dependsOn: [], providesTo: ['discord-integration']
   },
 
   // ─── LAYER 1: USER INTERFACES ──────────────────────────────────────────
@@ -263,6 +271,14 @@ export const NODES: ForgeNode[] = [
     tech: ['Stripe Subscriptions', 'Webhook Handler', 'Usage Tracking'],
     language: 'typescript', status: 'planned', risk: 'high', spof: true, license: 'BSL 1.1',
     dependsOn: ['express-server', 'stripe', 'postgres', 'redis'], providesTo: ['web-ui']
+  },
+  {
+    id: 'discord-integration', name: 'Discord Integration', shortName: 'Discord',
+    layer: 3, description: 'Full automated Discord control: server mgmt, bot commands, AI chat, webhooks, role automation, event alerts',
+    tech: ['Discord.js', 'Slash Commands', 'Gateway WS', 'Webhook Events', 'Interaction Handler'],
+    language: 'typescript', status: 'planned', risk: 'medium', spof: false, license: 'BSL 1.1',
+    dependsOn: ['express-server', 'discord-api', 'postgres', 'redis', 'ws-server', 'inference-proxy'],
+    providesTo: ['web-ui', 'tui', 'forge-builder']
   },
 
   // ─── LAYER 4: MCP FABRIC ──────────────────────────────────────────────
@@ -700,6 +716,16 @@ export const EDGES: ForgeEdge[] = [
   { id: 'e125', from: 'grafana', to: 'docker', type: 'depends', label: 'Container', critical: false },
   { id: 'e126', from: 'grafana', to: 'prometheus', type: 'data', label: 'Data source', critical: false },
   { id: 'e127', from: 'grafana', to: 'telemetry', type: 'data', label: 'Forge metrics', critical: false },
+
+  // ─── DISCORD INTEGRATION ─────────────────────────────────────────────
+  { id: 'e128', from: 'discord-api', to: 'discord-integration', type: 'api', label: 'REST + Gateway WS', critical: true },
+  { id: 'e129', from: 'discord-integration', to: 'express-server', type: 'api', label: 'Bot API routes', critical: true },
+  { id: 'e130', from: 'discord-integration', to: 'postgres', type: 'data', label: 'discord_logs, bot_config', critical: false },
+  { id: 'e131', from: 'discord-integration', to: 'redis', type: 'data', label: 'Session cache, rate limits', critical: false },
+  { id: 'e132', from: 'discord-integration', to: 'ws-server', type: 'event', label: 'Bridge WS→Discord', critical: true, bidirectional: true },
+  { id: 'e133', from: 'discord-integration', to: 'inference-proxy', type: 'api', label: 'AI chat via LLM proxy', critical: true },
+  { id: 'e134', from: 'discord-integration', to: 'web-ui', type: 'api', label: 'Config dashboard', critical: false },
+  { id: 'e135', from: 'discord-integration', to: 'forge-builder', type: 'event', label: 'Trigger workflows from Discord', critical: false },
 ];
 
 // ============================================================================
@@ -1009,6 +1035,33 @@ export const DB_TABLES: DBTable[] = [
       { name: 'dag', type: 'JSONB', note: 'DAG definition' },
       { name: 'user_id', type: 'UUID FK → users' },
       { name: 'is_active', type: 'BOOLEAN' },
+      { name: 'created_at', type: 'TIMESTAMP' },
+    ],
+  },
+  {
+    name: 'discord_configs', store: 'PostgreSQL', purpose: 'Discord bot configuration, server connections, channel mappings',
+    critical: false,
+    columns: [
+      { name: 'id', type: 'UUID PK' },
+      { name: 'bot_token_encrypted', type: 'TEXT', note: 'AES-256' },
+      { name: 'guild_id', type: 'VARCHAR', note: 'Discord server ID' },
+      { name: 'channels', type: 'JSONB', note: 'channel mappings' },
+      { name: 'command_prefix', type: 'VARCHAR' },
+      { name: 'is_active', type: 'BOOLEAN' },
+      { name: 'created_at', type: 'TIMESTAMP' },
+    ],
+  },
+  {
+    name: 'discord_logs', store: 'PostgreSQL', purpose: 'Immutable Discord event audit log (commands, messages, actions)',
+    critical: false,
+    columns: [
+      { name: 'id', type: 'UUID PK' },
+      { name: 'config_id', type: 'UUID FK → discord_configs' },
+      { name: 'event_type', type: 'ENUM(command,message,webhook,role,alert)' },
+      { name: 'user_id', type: 'VARCHAR', note: 'Discord user ID' },
+      { name: 'channel_id', type: 'VARCHAR' },
+      { name: 'content', type: 'TEXT' },
+      { name: 'metadata', type: 'JSONB' },
       { name: 'created_at', type: 'TIMESTAMP' },
     ],
   },
