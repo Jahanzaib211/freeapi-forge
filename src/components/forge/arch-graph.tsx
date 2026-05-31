@@ -564,6 +564,7 @@ export default function ArchGraph() {
                     {/* Glow for critical highlighted edges */}
                     {edge.critical && isHighlighted && (
                       <path
+                        id={edge.critical ? `flow-${edge.id}` : undefined}
                         d={path}
                         fill="none"
                         stroke={color}
@@ -573,6 +574,7 @@ export default function ArchGraph() {
                       />
                     )}
                     <path
+                      id={edge.critical ? `flow-${edge.id}` : undefined}
                       d={path}
                       fill="none"
                       stroke={color}
@@ -703,6 +705,25 @@ export default function ArchGraph() {
                   </g>
                 );
               })}
+
+              {/* Animated data flow particles on critical edges */}
+              {filteredEdges.filter(e => e.critical).slice(0, 12).map((edge, i) => {
+                const fromNode = layoutNodes.find(n => n.id === edge.from);
+                const toNode = layoutNodes.find(n => n.id === edge.to);
+                if (!fromNode || !toNode) return null;
+                const cx1 = fromNode.x + NODE_W / 2;
+                const cy1 = fromNode.y + NODE_H;
+                const cx2 = toNode.x + NODE_W / 2;
+                const cy2 = toNode.y;
+                const cy = Math.abs(cy2 - cy1) * 0.45;
+                return (
+                  <circle key={`particle-${edge.id}-${i}`} r="2" fill={EDGE_COLORS[edge.type]} opacity="0.8">
+                    <animateMotion dur={`${1.5 + i * 0.3}s`} repeatCount="indefinite" begin={`${i * 0.2}s`}>
+                      <mpath href={`#flow-${edge.id}`} />
+                    </animateMotion>
+                  </circle>
+                );
+              })}
             </svg>
 
             {/* Mini Map */}
@@ -714,7 +735,19 @@ export default function ArchGraph() {
                     <Minus size={8} />
                   </button>
                 </div>
-                <svg width="150" height="120" viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} className="block" style={{ transform: `scale(${150 / CANVAS_W})`, transformOrigin: 'top left' }}>
+                <svg width="150" height="120" viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} className="block cursor-crosshair" style={{ transform: `scale(${150 / CANVAS_W})`, transformOrigin: 'top left' }}
+                  onClick={(e) => {
+                    const svgEl = e.currentTarget;
+                    const rect = svgEl.getBoundingClientRect();
+                    const scaleX = CANVAS_W / (rect.width);
+                    const scaleY = CANVAS_H / (rect.height);
+                    const clickX = (e.clientX - rect.left) * scaleX;
+                    const clickY = (e.clientY - rect.top) * scaleY;
+                    const newPanX = -(clickX - (CANVAS_W / 2) * zoom);
+                    const newPanY = -(clickY - (CANVAS_H / 2) * zoom);
+                    setPan({ x: newPanX, y: newPanY });
+                  }}
+                >
                   {/* Mini edges */}
                   {filteredEdges.slice(0, 80).map(edge => {
                     const from = layoutNodes.find(n => n.id === edge.from);

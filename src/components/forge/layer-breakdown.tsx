@@ -46,8 +46,8 @@ export default function LayerBreakdown() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
             >
-              <Card className="bg-card/60 backdrop-blur border-border hover:border-opacity-80 transition-colors group overflow-hidden">
-                <div className="h-0.5" style={{ backgroundColor: layer.color }} />
+              <Card className="bg-card/60 backdrop-blur border-border hover:border-opacity-80 transition-all duration-300 group overflow-hidden hover:shadow-lg hover:shadow-black/20">
+                <div className="h-0.5 transition-opacity duration-300 group-hover:opacity-100 opacity-60" style={{ backgroundColor: layer.color }} />
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-bold" style={{ color: layer.color }}>

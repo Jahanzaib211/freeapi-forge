@@ -196,7 +196,7 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.2</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.3</span>
           </div>
         </div>
 
@@ -564,6 +564,19 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">
                 Click nodes to inspect. Drag to pan. Use controls to filter by layer, edge type, or critical path. {TREE_STATS.totalNodes} nodes, {TREE_STATS.totalEdges} connections.
               </p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  { label: 'Search Nodes', color: '#00FFB2' },
+                  { label: 'Mini-Map', color: '#38BDF8' },
+                  { label: 'Quick Filters', color: '#C084FC' },
+                  { label: 'Data Flow', color: '#FBBF24' },
+                  { label: 'Keyboard Nav', color: '#F472B6' },
+                ].map(f => (
+                  <Badge key={f.label} variant="outline" className="text-[8px] h-4 border-border/50" style={{ borderColor: f.color + '40', color: f.color }}>
+                    {f.label}
+                  </Badge>
+                ))}
+              </div>
             </div>
             <ArchGraph />
           </section>

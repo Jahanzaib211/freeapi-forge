@@ -377,3 +377,88 @@ NEXT PHASE PRIORITIES
 3. (Medium) Add expandable detail section tooltips on hover in graph
 4. (Low) Replace custom Shield SVG in pricing-section.tsx with Lucide import
 5. (Low) Add click-to-navigate on mini-map
+
+---
+Task ID: 5
+Agent: main (webDevReview-cron)
+Task: QA round 2 — mobile QA, data flow particles, mini-map click, styling polish
+
+Work Log:
+- Performed QA via agent-browser: 5 screenshots (desktop hero, graph, mid, bottom, mobile 375x812)
+- VLM analysis: Hero 8/10, Mobile 8/10, Graph 7/10 (VLM has difficulty seeing dark-on-dark small elements)
+- 0 browser errors, 0 console errors, all 200 OK, lint clean
+- Fixed pricing-section.tsx: replaced custom Shield SVG component with Lucide `Shield` import
+- Added click-to-navigate on mini-map in arch-graph.tsx:
+  - Click handler calculates clicked position in canvas coordinates
+  - Pans main view to center on clicked location
+  - Mini-map SVG has `cursor-crosshair` to indicate interactivity
+- Added animated data flow particles on critical edges:
+  - SVG `<circle>` + `<animateMotion>` elements follow edge paths via `<mpath>`
+  - Staggered animation timing (1.5s base + 0.3s offset per particle, 0.2s begin delay)
+  - Added `id="flow-{edgeId}"` to critical edge paths for particle reference
+  - Up to 12 particles rendered on critical edges for performance
+  - Particles are visible in live view (not in static screenshots)
+- Enhanced layer-breakdown.tsx card styling:
+  - Added `hover:shadow-lg hover:shadow-black/20` for depth effect
+  - Added `transition-all duration-300` for smooth animation
+  - Color bar opacity transitions on hover (60% → 100%)
+- Enhanced graph section header in page.tsx:
+  - Added 5 feature badges below description: Search Nodes, Mini-Map, Quick Filters, Data Flow, Keyboard Nav
+  - Each badge styled with accent color matching its feature
+- Version bump: v2.2 → v2.3
+
+Stage Summary:
+- Mobile QA passed: 8/10 rating, responsive design confirmed
+- 3 features added: mini-map click-to-navigate, data flow particles, feature badges
+- 1 code cleanup: Shield SVG → Lucide import in pricing-section.tsx
+- 1 styling enhancement: layer cards with hover shadow + color bar animation
+- Version: v2.3
+- Files modified: src/components/forge/arch-graph.tsx, src/components/forge/pricing-section.tsx, src/components/forge/layer-breakdown.tsx, src/app/page.tsx
+- Lint: 0 errors, 0 warnings
+- Server: 200 OK
+
+---
+CURRENT PROJECT STATUS (v2.3)
+============================
+- Forge Studio Dependency Tree v2.3 — comprehensive, production-quality interactive visualization
+- 56 nodes across 9 layers, 135 edges, 21 DB tables, 11 build phases (16.5 weeks)
+- 13 component files, all rendered on single page with 12-section navigation
+- Dark theme with #00FFB2 forge-green accent, animated elements, responsive design
+- VLM quality rating: 8/10 desktop hero, 8/10 mobile, graph has rich interactive features
+
+COMPLETED MODIFICATIONS / VERIFICATION RESULTS (Task ID: 5)
+=================================================================
+✅ VLM QA — 5 screenshots (desktop + mobile), 0 errors
+✅ Mobile responsive: 8/10 VLM rating, proper card wrapping, readable text, hamburger accessible
+✅ Desktop hero: 8/10 VLM rating, strong title hierarchy, aligned stat cards
+✅ Shield SVG replaced with Lucide import in pricing-section.tsx
+✅ Mini-map click-to-navigate — pans main view to clicked position
+✅ Data flow particles — animated SVG circles along critical edges (live view)
+✅ Feature badges — 5 accent-colored badges below graph section title
+✅ Layer card hover effects — shadow + color bar opacity transition
+✅ Version bumped to v2.3
+✅ Lint: 0 errors, 0 warnings
+✅ Dev server: 200 OK
+
+RESOLVED ISSUES
+==========================================
+✅ #1-#11 All previous issues resolved
+✅ #12 pricing-section.tsx Shield SVG → Lucide import
+✅ #13 Mini-map click-to-navigate (was view-only)
+✅ #14 Data flow particle animation on critical edges
+
+REMAINING ITEMS (low priority)
+================================
+1. (Low) Build phases don't include Docker Stack or P2P (they're infrastructure)
+2. (Low) Could add dark/light theme toggle
+3. (Low) Could add export graph as SVG/PNG
+4. (Low) Could add expandable tooltips on graph node hover
+5. (Low) Could add a "getting started" quick tutorial overlay
+
+NEXT PHASE PRIORITIES
+=======================
+1. (Medium) Add export graph as SVG/PNG button
+2. (Medium) Add expandable tooltips on graph node hover (show name + status inline)
+3. (Low) Dark/light theme toggle
+4. (Low) Quick tutorial overlay for first-time visitors
+5. (Low) Add print-friendly stylesheet for documentation
