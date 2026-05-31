@@ -27,6 +27,7 @@ import { tenantResolver, type TenantRequest } from "../middleware/tenant-resolve
 import { authMiddleware, type AuthRequest } from "../middleware/rbac";
 import { auditMiddleware } from "../middleware/audit-logger";
 import { eventBus } from "../services/event-bus";
+import { sseManager } from "./sse";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -282,6 +283,25 @@ async function startServer() {
       uptime: process.uptime(),
       features: cfg.features,
       checks,
+    });
+  });
+
+  // SSE endpoint for real-time updates
+  app.get("/api/sse", async (req: AuthRequest, res) => {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+    res.write(":ok\n\n");
+
+    const tenantId = req.tenantId || 1;
+    const clientId = `sse_${tenantId}_${Date.now()}`;
+    sseManager.addClient(clientId, tenantId, req, res);
+
+    req.on("close", () => {
+      // Client disconnected — sseManager handles cleanup internally
     });
   });
 
