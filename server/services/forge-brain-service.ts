@@ -1,6 +1,7 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { memoryNodes, memoryEvents } from "../../drizzle/schema";
+import { settingsService } from "./settings-service";
 
 const FORGE_NATIVE_TYPES = [
   "provider", "model", "agent", "workflow", "pipeline", "mcp",
@@ -21,6 +22,14 @@ export class ForgeBrainService {
   async createNode(tenantId: number, nodeType: string, slug: string, title: string,
     content: string, frontmatter?: Record<string, any>, tags?: string[], links?: string[]): Promise<any> {
     this.validateType(nodeType);
+
+    const brainEnabled = await settingsService.getSetting(tenantId, "brain.enabled");
+    if (!brainEnabled) return null;
+    const autoSync = await settingsService.getSetting(tenantId, "brain.autoSync");
+    if (!autoSync) return null;
+    const categories = await settingsService.getSetting(tenantId, "brain.categories");
+    if (categories && !categories[nodeType]) return null;
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 

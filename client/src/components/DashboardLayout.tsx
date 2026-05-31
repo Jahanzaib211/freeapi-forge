@@ -85,29 +85,66 @@ interface Section {
 
 const sidebarSections: Section[] = [
   {
-    title: "Core",
+    title: "AI LAB",
     items: [
-      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-      { icon: MessageCircle, label: "Chat", path: "/chat" },
-      { icon: Boxes, label: "Forge Builder", path: "/forge-builder" },
+      { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
       { icon: FlaskConical, label: "AI Lab", path: "/ai-lab" },
+      { icon: MessageSquare, label: "Playground", path: "/dashboard" },
+      { icon: MessageCircle, label: "Chat", path: "/chat" },
+      { icon: Rocket, label: "Deployments", path: "/deployment-monitor" },
+      { icon: Layers, label: "Inference Lab", path: "/inference" },
+      { icon: Boxes, label: "Forge Builder", path: "/forge-builder" },
+      { icon: Bot, label: "Agents Builder", path: "/agents" },
+    ],
+  },
+  {
+    title: "AI GATEWAY",
+    items: [
+      { icon: Zap, label: "Workflows", path: "/workflows" },
+      { icon: Key, label: "Virtual Keys", path: "/virtual-keys" },
+      { icon: Plug, label: "MCP Servers", path: "/mcp-servers" },
+      { icon: Cable, label: "MCP Explorer", path: "/mcp-explorer" },
+      { icon: HardDrive, label: "My MCPs", path: "/my-mcps" },
+      { icon: Zap, label: "Skills", path: "/skills" },
+      { icon: Shield, label: "Guardrails", path: "/guardrails" },
+      { icon: Wrench, label: "Tools Hub", path: "/tools-hub" },
+      { icon: FileCode, label: "Prompt Library", path: "/prompts" },
+      { icon: GitCompare, label: "Benchmark", path: "/benchmark" },
+      { icon: HeartPulse, label: "Provider Health", path: "/provider-health" },
+      { icon: Webhook, label: "Webhooks", path: "/webhooks" },
+      { icon: Search, label: "LLM Discoverer", path: "/llm-discoverer" },
+      { icon: GitBranch, label: "GitHub", path: "/github-explorer" },
       { icon: Brain, label: "Brain", path: "/forge-brain" },
     ],
   },
   {
-    title: "Tools",
+    title: "SYSTEM",
     items: [
-      { icon: Plug, label: "MCP", path: "/mcp" },
-      { icon: Cpu, label: "HuggingFace", path: "/huggingface" },
-      { icon: GitBranch, label: "GitHub", path: "/github-explorer" },
-      { icon: Rocket, label: "Deployments", path: "/deployment-monitor" },
+      { icon: Activity, label: "System Monitor", path: "/system-monitor" },
+      { icon: Settings, label: "Process Manager", path: "/process-manager" },
+      { icon: Cpu, label: "Local Models", path: "/local-models" },
+      { icon: Brain, label: "HuggingFace Hub", path: "/huggingface" },
+      { icon: BarChart3, label: "Usage & Logs", path: "/usage" },
+      { icon: HeartPulse, label: "Providers", path: "/providers" },
     ],
   },
   {
-    title: "System",
+    title: "SECURITY",
     items: [
-      { icon: Shield, label: "Guard", path: "/guard" },
-      { icon: DollarSign, label: "Budget", path: "/budgets" },
+      { icon: Shield, label: "Guardrails Monitor", path: "/guardrails-monitor" },
+      { icon: AlertCircle, label: "Error Logs", path: "/error-logs" },
+      { icon: ScrollText, label: "Audit Logs", path: "/audit-logs" },
+      { icon: Lock, label: "Access Groups", path: "/access-groups" },
+      { icon: User, label: "Internal Users", path: "/internal-users" },
+      { icon: Building2, label: "Organizations", path: "/organizations" },
+      { icon: Users, label: "Teams & Budgets", path: "/teams" },
+      { icon: Rocket, label: "Guard Monitor", path: "/guard" },
+    ],
+  },
+  {
+    title: "DEVELOPER",
+    items: [
+      { icon: BookOpen, label: "API Reference", path: "/api-reference" },
       { icon: Settings, label: "Settings", path: "/settings" },
     ],
   },
@@ -128,10 +165,32 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const [sections, setSections] = useState<Section[]>(sidebarSections);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    loadSidebarSettings();
+  }, []);
+
+  async function loadSidebarSettings() {
+    try {
+      const res = await fetch("/api/trpc/userSettings.getByCategory?input=" + encodeURIComponent(JSON.stringify({ json: { category: "gui" } })));
+      if (res.ok) {
+        const d = await res.json();
+        const guiSettings = d.result?.data?.json || {};
+        const hiddenItems: string[] = guiSettings.hiddenSidebarItems || [];
+        if (hiddenItems.length > 0) {
+          setSections(prev => prev.map(section => ({
+            ...section,
+            items: section.items.filter(item => !hiddenItems.includes(item.path)),
+          })));
+        }
+      }
+    } catch {}
+  }
 
   if (loading) {
     return <DashboardLayoutSkeleton />;
@@ -172,7 +231,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} sections={sections}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -182,6 +241,7 @@ export default function DashboardLayout({
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
+  sections: Section[];
 };
 
 function CollapsibleSection({
@@ -322,6 +382,7 @@ function SystemStatsBar() {
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  sections,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -420,7 +481,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 py-2 overflow-y-auto">
-            {sidebarSections.map((section) => (
+            {sections.map((section) => (
               <CollapsibleSection
                 key={section.title}
                 section={section}

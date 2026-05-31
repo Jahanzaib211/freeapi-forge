@@ -978,3 +978,35 @@ export const agentTasks = pgTable("agentTasks", {
 
 export type AgentTask = typeof agentTasks.$inferSelect;
 export type InsertAgentTask = typeof agentTasks.$inferInsert;
+
+// ─── TENANT SETTINGS (user-configurable preferences) ─────────────────────────
+export const tenantSettings = pgTable("tenantSettings", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  category: text("category").notNull(),
+  settingKey: text("settingKey").notNull(),
+  settingValue: text("settingValue").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantKeyUnique: uniqueIndex("tenantSettings_tenantId_key_unique").on(table.tenantId, table.settingKey),
+}));
+
+export type TenantSetting = typeof tenantSettings.$inferSelect;
+export type InsertTenantSetting = typeof tenantSettings.$inferInsert;
+
+// ─── USER OVERRIDES (per-user overrides on tenant settings) ──────────────────
+export const userOverrides = pgTable("userOverrides", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  userId: integer("userId").notNull(),
+  settingKey: text("settingKey").notNull(),
+  settingValue: text("settingValue").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userKeyUnique: uniqueIndex("userOverrides_tenant_user_key_unique").on(table.tenantId, table.userId, table.settingKey),
+}));
+
+export type UserOverride = typeof userOverrides.$inferSelect;
+export type InsertUserOverride = typeof userOverrides.$inferInsert;

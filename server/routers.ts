@@ -68,6 +68,7 @@ import { aiLabRouter } from "./routers/ai-lab";
 import { forgeBrainRouter } from "./routers/forge-brain";
 import { githubExplorerRouter } from "./routers/github-explorer";
 import { guardRouter } from "./routers/guard";
+import { settingsRouter as userSettingsRouter } from "./routers/user-settings";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -495,6 +496,9 @@ export const appRouter = router({
 
   // Guard Monitor
   guard: guardRouter,
+
+  // User Settings (agnostic config)
+  userSettings: userSettingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

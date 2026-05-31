@@ -2,8 +2,13 @@ import os from "os";
 import { getDb } from "../db";
 import { systemEvents } from "../../drizzle/schema";
 import { eq, and, desc, sql, like, count } from "drizzle-orm";
+import { settingsService } from "./settings-service";
 
 export class GuardService {
+  async getThresholds(tenantId: number): Promise<any> {
+    return settingsService.getSetting(tenantId, "guard.alertThresholds");
+  }
+
   async getSystemMetrics(): Promise<any> {
     const mem = process.memoryUsage();
     const totalMem = os.totalmem();
