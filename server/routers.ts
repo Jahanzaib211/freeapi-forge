@@ -64,6 +64,9 @@ import { agentRouter as agentBuilderRouter } from "./routers/agents";
 import { mcpExplorerRouter } from "./routers/mcp-explorer";
 import { workflowRouter } from "./routers/workflows";
 import { githubActionsRouter } from "./routers/github-actions";
+import { aiLabRouter } from "./routers/ai-lab";
+import { forgeBrainRouter } from "./routers/forge-brain";
+import { githubExplorerRouter } from "./routers/github-explorer";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -479,6 +482,15 @@ export const appRouter = router({
 
   // GitHub Actions Monitor
   githubActions: githubActionsRouter,
+
+  // AI Lab — API Explorer
+  aiLab: aiLabRouter,
+
+  // Forge Brain — Memory Layer
+  forgeBrain: forgeBrainRouter,
+
+  // GitHub Explorer
+  githubExplorer: githubExplorerRouter,
 });
 
 export type AppRouter = typeof appRouter;
