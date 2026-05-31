@@ -1,5 +1,6 @@
 # Forge Studio — Production Dockerfile
 # Multi-stage build: builder → production
+# Usage: docker build -t forge-studio .
 
 # ─── Build Stage ─────────────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -9,16 +10,10 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-RUN CI=true pnpm install --frozen-lockfile
-RUN pnpm approve-builds bcrypt esbuild @swc/core 2>/dev/null || true
+RUN pnpm install --frozen-lockfile
 
 COPY . .
-
-# Build Vite client
-RUN pnpm build:client
-
-# Build server with esbuild
-RUN pnpm build:server
+RUN pnpm build
 
 # ─── Production Stage ────────────────────────────────────────────
 FROM node:22-alpine
@@ -30,13 +25,16 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-RUN CI=true pnpm install --frozen-lockfile --prod
-RUN pnpm approve-builds bcrypt 2>/dev/null || true
+RUN pnpm install --frozen-lockfile --prod
 
-# Copy built artifacts
+# Copy built artifacts — Vite outputs to dist/public/, esbuild to dist/index.js
 COPY --from=builder /app/dist ./dist
+
+# Copy drizzle migrations and schema for runtime migration
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./
+
+# Copy scripts
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/ecosystem.production.cjs ./
 COPY --from=builder /app/ecosystem.services.cjs ./
