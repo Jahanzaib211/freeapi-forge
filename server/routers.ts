@@ -56,6 +56,8 @@ import { auditRouter } from "./routers/audit_router";
 import { sandboxRouter } from "./routers/sandbox_router";
 import { localModelRouter } from "./routers/local_model_router";
 import { provisioningRouter } from "./routers/provisioning";
+import { chatRouter } from "./routers/chat";
+import { budgetRouter } from "./routers/budget";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -577,6 +579,12 @@ export const appRouter = router({
 
   // Multi-tenant provisioning
   provisioning: provisioningRouter,
+
+  // Chat engine
+  chat: chatRouter,
+
+  // Budget management
+  budgetManager: budgetRouter,
 });
 
 export type AppRouter = typeof appRouter;

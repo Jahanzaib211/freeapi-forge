@@ -4,6 +4,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import NotFound from "@/pages/NotFound";
 import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
+import ChatPage from "@/pages/Chat";
+import TenantDashboard from "@/pages/TenantDashboard";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -71,6 +73,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
+      <Route path="/chat" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      <Route path="/chat/:id" component={() => <ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      <Route path="/tenant-dashboard" component={() => <ProtectedRoute><TenantDashboard /></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />

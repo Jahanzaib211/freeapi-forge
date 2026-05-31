@@ -386,3 +386,45 @@ export const cacheEntries = pgTable("cacheEntries", {
 });
 
 export type CacheEntry = typeof cacheEntries.$inferSelect;
+
+// ─── CONVERSATIONS ───────────────────────────────────────────────────────────
+export const conversations = pgTable("conversations", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  userId: integer("userId").notNull(),
+  title: varchar("title", { length: 500 }).default("New Chat").notNull(),
+  systemPrompt: text("systemPrompt"),
+  model: varchar("model", { length: 255 }),
+  messageCount: integer("messageCount").default(0).notNull(),
+  totalTokens: integer("totalTokens").default(0).notNull(),
+  totalCostUsd: integer("totalCostUsd").default(0).notNull(),
+  forkedFrom: integer("forkedFrom"),
+  deletedAt: timestamp("deletedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;
+
+// ─── MESSAGES ────────────────────────────────────────────────────────────────
+export const messages = pgTable("messages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  conversationId: integer("conversationId").notNull(),
+  tenantId: integer("tenantId").notNull(),
+  role: varchar("role", { length: 16 }).notNull(),
+  content: text("content").notNull(),
+  model: varchar("model", { length: 255 }),
+  provider: varchar("provider", { length: 128 }),
+  promptTokens: integer("promptTokens").default(0).notNull(),
+  completionTokens: integer("completionTokens").default(0).notNull(),
+  totalTokens: integer("totalTokens").default(0).notNull(),
+  costUsd: integer("costUsd").default(0).notNull(),
+  latencyMs: integer("latencyMs").default(0).notNull(),
+  status: varchar("status", { length: 32 }).default("success").notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
