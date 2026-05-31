@@ -1,0 +1,20 @@
+CREATE TABLE "agentTasks" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "agentTasks_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"tenantId" integer NOT NULL,
+	"agentId" integer,
+	"workflowId" integer,
+	"taskType" text NOT NULL,
+	"status" text DEFAULT 'queued' NOT NULL,
+	"input" text,
+	"output" text,
+	"error" text,
+	"progress" integer DEFAULT 0 NOT NULL,
+	"progressMessage" text,
+	"totalSteps" integer DEFAULT 0 NOT NULL,
+	"currentStep" integer DEFAULT 0 NOT NULL,
+	"startedAt" timestamp,
+	"completedAt" timestamp,
+	"durationMs" integer DEFAULT 0 NOT NULL,
+	"createdBy" integer,
+	"createdAt" timestamp DEFAULT now() NOT NULL
+);

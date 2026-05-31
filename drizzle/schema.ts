@@ -953,3 +953,28 @@ export const memoryEvents = pgTable("memoryEvents", {
 
 export type MemoryEvent = typeof memoryEvents.$inferSelect;
 export type InsertMemoryEvent = typeof memoryEvents.$inferInsert;
+
+// ─── AGENT TASKS (task queue for agent/workflow execution) ──────────────────
+export const agentTasks = pgTable("agentTasks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  agentId: integer("agentId"),
+  workflowId: integer("workflowId"),
+  taskType: text("taskType").notNull(),          // 'agent_run' | 'workflow_run' | 'benchmark' | 'discovery'
+  status: text("status").notNull().default("queued"),  // 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  input: text("input"),                          // JSON string: task input params
+  output: text("output"),                        // JSON string: task output/result
+  error: text("error"),                          // error message if failed
+  progress: integer("progress").default(0).notNull(), // 0-100
+  progressMessage: text("progressMessage"),
+  totalSteps: integer("totalSteps").default(0).notNull(),
+  currentStep: integer("currentStep").default(0).notNull(),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  durationMs: integer("durationMs").default(0).notNull(),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AgentTask = typeof agentTasks.$inferSelect;
+export type InsertAgentTask = typeof agentTasks.$inferInsert;

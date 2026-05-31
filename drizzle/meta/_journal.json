@@ -29,6 +29,13 @@
       "when": 1780258149432,
       "tag": "0003_far_champions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780262685285,
+      "tag": "0004_broken_dorian_gray",
+      "breakpoints": true
     }
   ]
 }
