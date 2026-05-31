@@ -1,0 +1,18 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">version: '3.8'\n\nservices:\n  redis:\n    image: redis:7-alpine\n    container_name: forge-studio-redis\n    ports:\n      - \"6379:6379\"\n    volumes:\n      - redis-data:/data\n    command: redis-server --appendonly yes\n    healthcheck:\n      test: [\"CMD\", \"redis-cli\", \"ping\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    networks:\n      - forge-network\n\n  postgres:\n    image: postgres:17\n    container_name: forge-studio-postgres\n    environment:\n      POSTGRES_USER: ${POSTGRES_USER:-forge}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forge_password}\n      POSTGRES_DB: ${POSTGRES_DB:-forge_studio}\n    ports:\n      - \"5434:5432\"\n    volumes:\n      - postgres-data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U ${POSTGRES_USER:-forge}\"]\n      interval: 10s\n      timeout: 5s\n      retries: 5\n    networks:\n      - forge-network\n\n  nginx:\n    image: nginx:alpine\n    container_name: forge-studio-nginx\n    ports:\n      - \"80:80\"\n    volumes:\n      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro\n    depends_on:\n      - app\n    networks:\n      - forge-network\n    restart: unless-stopped\n\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: forge-studio-app\n    environment:\n      NODE_ENV: production\n      PORT: 5051\n      DATABASE_URL: postgresql://${POSTGRES_USER:-forge}:${POSTGRES_PASSWORD:-forge_password}@postgres:5432/${POSTGRES_DB:-forge_studio}\n      REDIS_URL: redis://redis:6379/1\n      LITELLM_URL: ${LITELLM_URL:-http://host.docker.internal:5050}\n      LITELLM_API_KEY: ${LITELLM_API_KEY:-sk-ai-lab-master-key}\n      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}\n    expose:\n      - \"5051\"\n    depends_on:\n      redis:\n        condition: service_healthy\n      postgres:\n        condition: service_healthy\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:5051/health\"]\n      interval: 30s\n      timeout: 5s\n      retries: 3\n      start_period: 20s\n    networks:\n      - forge-network\n    restart: unless-stopped\n\n  ollama:\n    image: ollama/ollama:latest\n    container_name: forge-studio-ollama\n    environment:\n      OLLAMA_HOST: 0.0.0.0:11434\n    ports:\n      - \"11434:11434\"\n    volumes:\n      - ollama-data:/root/.ollama\n    networks:\n      - forge-network\n    restart: unless-stopped\n    profiles:\n      - with-ollama\n\nvolumes:\n  redis-data:\n    driver: local\n  postgres-data:\n    driver: local\n  ollama-data:\n    driver: local\n\nnetworks:\n  forge-network:\n    driver: bridge\n</pre></body></html>",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/Jahanzaib211/forge-studio/main/docker-compose.yml",
+    "usage": {
+      "tokens": 759
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 759
+    }
+  },
+  "status": 20000
+}

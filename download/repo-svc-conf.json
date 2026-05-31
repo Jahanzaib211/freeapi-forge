@@ -1,0 +1,18 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\"># Forge Studio — Optional Services Configuration\n# Set to 'true' to enable a service, 'false' to disable.\n# Changes take effect on next startup (scripts/start-stack.sh)\n\n# Core infrastructure\nlitellm-proxy=true\n\n# Vector database\nqdrant=true\n\n# MCP (Model Context Protocol)\nmcp-sse=true\nmcp-gateway-docker=true\n\n# AI Lab Dashboard\nai-lab-dashboard=true\n</pre></body></html>",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/Jahanzaib211/forge-studio/main/services.conf",
+    "usage": {
+      "tokens": 131
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 131
+    }
+  },
+  "status": 20000
+}

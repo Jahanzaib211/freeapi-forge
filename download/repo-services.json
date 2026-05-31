@@ -1,0 +1,18 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">module.exports = {\n  apps: [\n    {\n      name: \"qdrant\",\n      script: \"qdrant\",\n      args: \"--storage-path ~/.qdrant_storage\",\n      interpreter: \"none\",\n      autorestart: true,\n      max_restarts: 10,\n      restart_delay: 3000,\n      error_file: \"/home/jahanzaib/.pm2/logs/qdrant-error.log\",\n      out_file: \"/home/jahanzaib/.pm2/logs/qdrant-out.log\",\n      log_date_format: \"YYYY-MM-DD HH:mm:ss Z\",\n      merge_logs: true,\n    },\n    {\n      name: \"mcp-sse\",\n      script: \"/home/jahanzaib/mcp-system/bridge/mcp_sse.py\",\n      interpreter: \"python3\",\n      autorestart: true,\n      max_restarts: 10,\n      restart_delay: 3000,\n      error_file: \"/home/jahanzaib/.pm2/logs/mcp-sse-error.log\",\n      out_file: \"/home/jahanzaib/.pm2/logs/mcp-sse-out.log\",\n      log_date_format: \"YYYY-MM-DD HH:mm:ss Z\",\n      merge_logs: true,\n    },\n    {\n      name: \"mcp-gateway-docker\",\n      script: \"docker\",\n      args: \"compose -f /home/jahanzaib/mcp-system/docker-compose.yml up\",\n      cwd: \"/home/jahanzaib/mcp-system\",\n      autorestart: false,\n      restart_delay: 10000,\n      max_restarts: 3,\n      env: {\n        COMPOSE_FILE: \"/home/jahanzaib/mcp-system/docker-compose.yml\",\n      },\n      error_file: \"/home/jahanzaib/.pm2/logs/mcp-gateway-docker-error.log\",\n      out_file: \"/home/jahanzaib/.pm2/logs/mcp-gateway-docker-out.log\",\n      log_date_format: \"YYYY-MM-DD HH:mm:ss Z\",\n      merge_logs: true,\n    },\n    {\n      name: \"ai-lab-dashboard\",\n      script: \"/home/jahanzaib/ai-lab-dashboard/start.sh\",\n      interpreter: \"bash\",\n      autorestart: true,\n      max_restarts: 10,\n      restart_delay: 3000,\n      error_file: \"/home/jahanzaib/.pm2/logs/ai-lab-dashboard-error.log\",\n      out_file: \"/home/jahanzaib/.pm2/logs/ai-lab-dashboard-out.log\",\n      log_date_format: \"YYYY-MM-DD HH:mm:ss Z\",\n      merge_logs: true,\n    },\n  ],\n};\n</pre></body></html>",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/Jahanzaib211/forge-studio/main/ecosystem.services.cjs",
+    "usage": {
+      "tokens": 590
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 590
+    }
+  },
+  "status": 20000
+}

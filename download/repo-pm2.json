@@ -1,0 +1,18 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\">module.exports = {\n  apps: [\n    {\n      name: \"forge-studio\",\n      script: \"node\",\n      args: \"dist/index.js\",\n      cwd: \"/home/jahanzaib/forge-studio\",\n      autorestart: true,\n      watch: false,\n      env: {\n        NODE_ENV: \"production\",\n        PORT: 5051,\n      },\n      max_restarts: 50,\n      restart_delay: 2000,\n      exp_backoff_restart_delay: 100,\n      min_uptime: 5000,\n      kill_timeout: 10000,\n      listen_timeout: 15000,\n      error_file: \"/home/jahanzaib/.pm2/logs/forge-studio-error.log\",\n      out_file: \"/home/jahanzaib/.pm2/logs/forge-studio-out.log\",\n      log_date_format: \"YYYY-MM-DD HH:mm:ss Z\",\n      merge_logs: true,\n    },\n  ],\n};\n</pre></body></html>",
+    "title": "",
+    "url": "https://raw.githubusercontent.com/Jahanzaib211/forge-studio/main/ecosystem.production.cjs",
+    "usage": {
+      "tokens": 238
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 238
+    }
+  },
+  "status": 20000
+}
