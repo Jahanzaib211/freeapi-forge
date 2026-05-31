@@ -1,4 +1,4 @@
-import { integer, pgEnum, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 // ─── ENUMS ──────────────────────────────────────────────────────────────────
 export const roleEnum = pgEnum("role", ["user", "admin", "developer", "viewer", "api_user"]);
@@ -802,3 +802,154 @@ export const deploymentAlerts = pgTable("deploymentAlerts", {
 
 export type DeploymentAlert = typeof deploymentAlerts.$inferSelect;
 export type InsertDeploymentAlert = typeof deploymentAlerts.$inferInsert;
+
+// ─── PROVIDER REGISTRY (global catalog, no tenantId) ─────────────────────────
+export const providerRegistry = pgTable("providerRegistry", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  type: text("type").notNull(),
+  description: text("description"),
+  websiteUrl: text("websiteUrl"),
+  apiDocsUrl: text("apiDocsUrl"),
+  authType: text("authType").notNull(),
+  baseUrl: text("baseUrl").notNull(),
+  modelsEndpoint: text("modelsEndpoint").notNull(),
+  icon: text("icon"),
+  supportedFeatures: text("supportedFeatures"),
+  pricingModel: text("pricingModel"),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type ProviderRegistry = typeof providerRegistry.$inferSelect;
+export type InsertProviderRegistry = typeof providerRegistry.$inferInsert;
+
+// ─── TENANT PROVIDER CONFIGS (per-tenant connection to a provider) ────────────
+export const tenantProviderConfigs = pgTable("tenantProviderConfigs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  providerRegistryId: integer("providerRegistryId").notNull().references(() => providerRegistry.id),
+  apiKeyEncrypted: text("apiKeyEncrypted"),
+  isActive: boolean("isActive").notNull().default(true),
+  enabledModelIds: text("enabledModelIds"),
+  customConfig: text("customConfig"),
+  lastHealthCheck: timestamp("lastHealthCheck"),
+  lastHealthStatus: text("lastHealthStatus"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type TenantProviderConfig = typeof tenantProviderConfigs.$inferSelect;
+export type InsertTenantProviderConfig = typeof tenantProviderConfigs.$inferInsert;
+
+// ─── ONBOARDING PROFILES ─────────────────────────────────────────────────────
+export const onboardingProfiles = pgTable("onboardingProfiles", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  useCase: text("useCase"),
+  preferredProviders: text("preferredProviders"),
+  preferredModels: text("preferredModels"),
+  autoConfigApplied: text("autoConfigApplied"),
+  questionnaireVersion: integer("questionnaireVersion").notNull().default(1),
+  completedAt: timestamp("completedAt"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type OnboardingProfile = typeof onboardingProfiles.$inferSelect;
+export type InsertOnboardingProfile = typeof onboardingProfiles.$inferInsert;
+
+// ─── SUGGESTION DISMISSALS ───────────────────────────────────────────────────
+export const suggestionDismissals = pgTable("suggestionDismissals", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  suggestionType: text("suggestionType").notNull(),
+  suggestionKey: text("suggestionKey").notNull(),
+  dismissedAt: timestamp("dismissedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+});
+
+export type SuggestionDismissal = typeof suggestionDismissals.$inferSelect;
+export type InsertSuggestionDismissal = typeof suggestionDismissals.$inferInsert;
+
+// ─── MODEL BENCHMARKS ────────────────────────────────────────────────────────
+export const modelBenchmarks = pgTable("modelBenchmarks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  modelId: text("modelId").notNull(),
+  provider: text("provider").notNull(),
+  prompt: text("prompt").notNull(),
+  response: text("response"),
+  tokensUsed: integer("tokensUsed"),
+  durationMs: integer("durationMs"),
+  qualityScore: integer("qualityScore"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ModelBenchmark = typeof modelBenchmarks.$inferSelect;
+export type InsertModelBenchmark = typeof modelBenchmarks.$inferInsert;
+
+// ─── TRACKED REPOS ───────────────────────────────────────────────────────────
+export const trackedRepos = pgTable("trackedRepos", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  githubRepoId: integer("githubRepoId"),
+  fullName: text("fullName").notNull(),
+  owner: text("owner").notNull(),
+  repo: text("repo").notNull(),
+  description: text("description"),
+  language: text("language"),
+  stars: integer("stars"),
+  forks: integer("forks"),
+  topics: text("topics"),
+  readmeHtml: text("readmeHtml"),
+  lastCheckedAt: timestamp("lastCheckedAt"),
+  lastCommitAt: timestamp("lastCommitAt"),
+  lastReleaseAt: timestamp("lastReleaseAt"),
+  trackedBy: text("trackedBy"),
+  notificationEnabled: boolean("notificationEnabled").notNull().default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type TrackedRepo = typeof trackedRepos.$inferSelect;
+export type InsertTrackedRepo = typeof trackedRepos.$inferInsert;
+
+// ─── MEMORY NODES (Forge Brain) ──────────────────────────────────────────────
+export const memoryNodes = pgTable("memoryNodes", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  nodeType: text("nodeType").notNull(),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  filePath: text("filePath").notNull(),
+  frontmatter: text("frontmatter"),
+  backlinks: text("backlinks"),
+  outboundLinks: text("outboundLinks"),
+  tags: text("tags"),
+  status: text("status").notNull().default("active"),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  tenantSlugUnique: uniqueIndex("memoryNodes_tenantId_slug_unique").on(table.tenantId, table.slug),
+}));
+
+export type MemoryNode = typeof memoryNodes.$inferSelect;
+export type InsertMemoryNode = typeof memoryNodes.$inferInsert;
+
+// ─── MEMORY EVENTS (Forge Brain audit log) ───────────────────────────────────
+export const memoryEvents = pgTable("memoryEvents", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  nodeSlug: text("nodeSlug").notNull(),
+  eventType: text("eventType").notNull(),
+  eventData: text("eventData"),
+  source: text("source").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MemoryEvent = typeof memoryEvents.$inferSelect;
+export type InsertMemoryEvent = typeof memoryEvents.$inferInsert;
