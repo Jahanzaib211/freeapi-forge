@@ -13,8 +13,23 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState("fast-8b");
   const [mcpTools, setMcpTools] = useState<string[]>([]);
   const [showTools, setShowTools] = useState(false);
+  const [hasProviders, setHasProviders] = useState(true);
+  const [providersLoading, setProvidersLoading] = useState(true);
 
-  useEffect(() => { loadConversations(); loadMcpTools(); }, []);
+  useEffect(() => { loadConversations(); loadMcpTools(); checkProviders(); }, []);
+
+  async function checkProviders() {
+    setProvidersLoading(true);
+    try {
+      const res = await fetch("/api/trpc/providers.status", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const d = await res.json();
+        const data = d.result?.data?.json || d.result?.data || {};
+        setHasProviders(Array.isArray(data) ? data.length > 0 : !!data);
+      }
+    } catch { setHasProviders(false); }
+    setProvidersLoading(false);
+  }
 
   async function loadConversations() {
     try {
@@ -146,6 +161,20 @@ export default function ChatPage() {
               </div>
               <div className="ml-auto text-xs text-muted-foreground">{messages.length} messages</div>
             </div>
+
+            {/* Provider warning banner */}
+            {!hasProviders && !providersLoading && (
+              <div className="mx-4 mt-3 px-4 py-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg flex items-center gap-3">
+                <span className="text-yellow-400 text-lg">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-sm text-foreground font-medium">No providers connected</p>
+                  <p className="text-xs text-muted-foreground">Connect a provider to start chatting with AI models.</p>
+                </div>
+                <a href="/ai-lab?tab=providers" className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 whitespace-nowrap">
+                  Go to AI Lab
+                </a>
+              </div>
+            )}
 
             {/* Messages */}
             <AIChatBox
