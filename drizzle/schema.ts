@@ -535,3 +535,108 @@ export const toolApprovals = pgTable("toolApprovals", {
 
 export type ToolApproval = typeof toolApprovals.$inferSelect;
 export type InsertToolApproval = typeof toolApprovals.$inferInsert;
+
+// ─── MCP REGISTRY (Marketplace Catalog) ──────────────────────────────────────
+export const tierEnum = pgEnum("tier", ["free", "pro", "enterprise"]);
+export const mcpCategoryEnum = pgEnum("mcpCategory", [
+  "developer-tools", "data", "search", "communication", "ai",
+  "automation", "security", "productivity", "database", "file-management",
+]);
+
+export const mcpRegistry = pgTable("mcpRegistry", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  version: varchar("version", { length: 32 }).default("1.0.0").notNull(),
+  author: varchar("author", { length: 255 }),
+  category: mcpCategoryEnum("category").default("developer-tools").notNull(),
+  icon: varchar("icon", { length: 64 }).default("🔌"),
+  tier: tierEnum("tier").default("free").notNull(),
+  installCount: integer("installCount").default(0).notNull(),
+  rating: integer("rating").default(0).notNull(),
+  reviewCount: integer("reviewCount").default(0).notNull(),
+  tools: text("tools"),
+  resources: text("resources"),
+  prompts: text("prompts"),
+  configSchema: text("configSchema"),
+  officialUrl: varchar("officialUrl", { length: 1024 }),
+  githubUrl: varchar("githubUrl", { length: 1024 }),
+  npmPackage: varchar("npmPackage", { length: 255 }),
+  status: varchar("status", { length: 32 }).default("active").notNull(),
+  featured: integer("featured").default(0).notNull(),
+  tags: text("tags"),
+  lastVerifiedAt: timestamp("lastVerifiedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type McpRegistry = typeof mcpRegistry.$inferSelect;
+export type InsertMcpRegistry = typeof mcpRegistry.$inferInsert;
+
+// ─── MCP USAGE LOG ───────────────────────────────────────────────────────────
+export const mcpUsageLog = pgTable("mcpUsageLog", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  userId: integer("userId"),
+  mcpServerId: integer("mcpServerId").notNull(),
+  toolName: varchar("toolName", { length: 255 }).notNull(),
+  inputParams: text("inputParams"),
+  outputResult: text("outputResult"),
+  durationMs: integer("durationMs").default(0).notNull(),
+  success: integer("success").default(1).notNull(),
+  errorMessage: text("errorMessage"),
+  tokensUsed: integer("tokensUsed").default(0).notNull(),
+  costUsd: integer("costUsd").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type McpUsageLog = typeof mcpUsageLog.$inferSelect;
+export type InsertMcpUsageLog = typeof mcpUsageLog.$inferInsert;
+
+// ─── MCP REVIEWS ──────────────────────────────────────────────────────────────
+export const mcpReviews = pgTable("mcpReviews", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  userId: integer("userId"),
+  mcpServerId: integer("mcpServerId").notNull(),
+  rating: integer("rating").notNull(),
+  title: varchar("title", { length: 255 }),
+  review: text("review"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type McpReview = typeof mcpReviews.$inferSelect;
+export type InsertMcpReview = typeof mcpReviews.$inferInsert;
+
+// ─── SUBSCRIPTION PLANS ──────────────────────────────────────────────────────
+export const subscriptionPlans = pgTable("subscriptionPlans", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 64 }).notNull().unique(),
+  priceMonthlyUsd: integer("priceMonthlyUsd").default(0).notNull(),
+  maxMcpServers: integer("maxMcpServers").default(10).notNull(),
+  maxToolCallsPerDay: integer("maxToolCallsPerDay").default(100).notNull(),
+  features: text("features"),
+  stripePriceId: varchar("stripePriceId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+// ─── TENANT SUBSCRIPTIONS ─────────────────────────────────────────────────────
+export const tenantSubscriptions = pgTable("tenantSubscriptions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull().unique(),
+  planId: integer("planId").notNull(),
+  status: varchar("status", { length: 32 }).default("active").notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  trialEndsAt: timestamp("trialEndsAt"),
+  cancelledAt: timestamp("cancelledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type TenantSubscription = typeof tenantSubscriptions.$inferSelect;
+export type InsertTenantSubscription = typeof tenantSubscriptions.$inferInsert;

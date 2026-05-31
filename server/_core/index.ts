@@ -59,6 +59,22 @@ async function startServer() {
     console.warn("[Skills] Auto-discovery failed:", err.message);
   }
 
+  // Seed MCP registry + subscription plans
+  try {
+    const { mcpDiscoveryAgent } = await import("../services/mcp-discovery-agent");
+    const seedCount = await mcpDiscoveryAgent.seedRegistry();
+    await mcpDiscoveryAgent.seedPlans();
+    if (seedCount > 0) console.log(`[MCP] Seeded ${seedCount} MCP servers + subscription plans`);
+  } catch (err: any) {
+    console.warn("[MCP] Seed failed:", err.message);
+  }
+
+  // Assign free plan to default tenant
+  try {
+    const { mcpDiscoveryAgent } = await import("../services/mcp-discovery-agent");
+    await mcpDiscoveryAgent.assignFreePlan(1);
+  } catch {}
+
   // Start agent scheduler
   try {
     const { agentScheduler } = await import("../services/agent-scheduler");

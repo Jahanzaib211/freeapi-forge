@@ -9,6 +9,8 @@ import TenantDashboard from "@/pages/TenantDashboard";
 import AuditLogPage from "@/pages/AuditLog";
 import AgentBuilder from "@/pages/AgentBuilder";
 import AgentActivity from "@/pages/AgentActivity";
+import McpExplorer from "@/pages/McpExplorer";
+import MyMcps from "@/pages/MyMcps";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -82,6 +84,9 @@ function Router() {
       <Route path="/agents" component={() => <ProtectedRoute><AgentBuilder /></ProtectedRoute>} />
       <Route path="/agents/:id" component={() => <ProtectedRoute><AgentActivity /></ProtectedRoute>} />
       <Route path="/agent-activity" component={() => <ProtectedRoute><AgentActivity /></ProtectedRoute>} />
+      <Route path="/mcp-explorer" component={() => <ProtectedRoute><McpExplorer /></ProtectedRoute>} />
+      <Route path="/my-mcps" component={() => <ProtectedRoute><MyMcps /></ProtectedRoute>} />
+      <Route path="/mcp/:slug" component={() => <ProtectedRoute><McpExplorer /></ProtectedRoute>} />
       <Route path="/audit-logs" component={() => <ProtectedRoute><AuditLogPage /></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
