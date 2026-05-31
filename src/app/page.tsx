@@ -200,7 +200,7 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.4</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.5</span>
           </div>
         </div>
 
@@ -254,7 +254,7 @@ function Navbar() {
         </div>
 
         {/* Mobile menu toggle */}
-        <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden text-muted-foreground">
+        <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden text-muted-foreground w-10 h-10 flex items-center justify-center">
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
@@ -277,7 +277,7 @@ function Navbar() {
                     key={item.href}
                     href={item.href}
                     onClick={(e) => handleNavClick(e, item.href)}
-                    className={`block px-3 py-2 text-sm rounded transition-colors font-medium ${
+                    className={`block px-3 py-2.5 text-sm rounded transition-colors font-medium ${
                       isActive
                         ? 'text-[#00FFB2] bg-[#00FFB2]/10'
                         : 'text-foreground/60 hover:text-foreground hover:bg-secondary/50'
@@ -303,6 +303,23 @@ function Hero() {
       <div className="absolute inset-0 bg-dots opacity-30" />
       {/* Gradient overlay for visual depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-transparent to-[#0a0a0f] pointer-events-none" />
+      {/* Faint network nodes decoration */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.03] pointer-events-none animate-network-shift" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="network-dots" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+            <circle cx="30" cy="30" r="1" fill="#00FFB2" />
+            <circle cx="0" cy="0" r="0.5" fill="#38BDF8" />
+            <circle cx="60" cy="0" r="0.5" fill="#38BDF8" />
+            <circle cx="0" cy="60" r="0.5" fill="#38BDF8" />
+            <circle cx="60" cy="60" r="0.5" fill="#38BDF8" />
+            <line x1="30" y1="30" x2="0" y2="0" stroke="#00FFB2" strokeWidth="0.3" />
+            <line x1="30" y1="30" x2="60" y2="0" stroke="#00FFB2" strokeWidth="0.3" />
+            <line x1="30" y1="30" x2="0" y2="60" stroke="#00FFB2" strokeWidth="0.3" />
+            <line x1="30" y1="30" x2="60" y2="60" stroke="#00FFB2" strokeWidth="0.3" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#network-dots)" />
+      </svg>
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#00FFB2] rounded-full opacity-[0.02] blur-[120px] animate-hero-gradient" />
       <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-[#38BDF8] rounded-full opacity-[0.02] blur-[100px]" />
       <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-[#A78BFA] rounded-full opacity-[0.02] blur-[100px]" />
@@ -328,7 +345,7 @@ function Hero() {
             Forge Studio{' '}
             <span className="text-[#00FFB2]" style={{ textShadow: '0 0 40px rgba(0,255,178,0.3)' }}>Dependency Tree</span>
           </h1>
-          <p className="mt-4 text-sm md:text-lg text-foreground/85 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 text-[15px] md:text-lg text-foreground/85 max-w-2xl mx-auto leading-relaxed">
             Complete architecture map: <span className="text-foreground/90 font-semibold">{TREE_STATS.totalNodes} components</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalEdges} connections</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalLayers} layers</span>,{' '}
@@ -345,7 +362,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-3xl mx-auto"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-3xl mx-auto"
         >
           {[
             { label: 'Components', value: TREE_STATS.totalNodes, icon: <Boxes size={18} />, color: '#00FFB2' },
@@ -359,23 +376,31 @@ function Hero() {
           ))}
         </motion.div>
 
-        {/* CTA Button */}
+        {/* CTA Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
-          className="flex justify-center mt-8"
+          className="flex items-center justify-center gap-4 mt-8"
         >
           <button
             onClick={() => {
               const el = document.getElementById('graph');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="group flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#00FFB2]/10 border border-[#00FFB2]/20 text-[#00FFB2] text-xs font-semibold hover:bg-[#00FFB2]/20 hover:border-[#00FFB2]/40 transition-all duration-300 cursor-pointer"
+            className="cta-glow group flex items-center gap-2 px-6 py-3 rounded-lg bg-[#00FFB2]/10 border border-[#00FFB2]/20 text-[#00FFB2] text-xs font-semibold hover:bg-[#00FFB2]/20 hover:border-[#00FFB2]/40 hover:text-sm transition-all duration-300 cursor-pointer"
           >
             Explore Graph
             <ArrowDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
           </button>
+          <a
+            href="#roadmap"
+            onClick={(e) => { e.preventDefault(); const el = document.getElementById('roadmap'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+            className="group flex items-center gap-1.5 text-muted-foreground/60 text-xs font-medium hover:text-[#00FFB2] transition-colors duration-200 cursor-pointer"
+          >
+            View Roadmap
+            <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
+          </a>
         </motion.div>
 
         {/* Language & License summary */}
@@ -505,11 +530,11 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
 
   return (
     <Card
-      className="bg-card/60 backdrop-blur border-border transition-all duration-300 cursor-default overflow-hidden"
+      className="bg-card/60 backdrop-blur border-border/50 card-inner-highlight hover:-translate-y-0.5 transition-all duration-300 cursor-default overflow-hidden"
       style={{
         boxShadow: hovered
-          ? `0 0 20px ${stat.color}20, 0 0 40px ${stat.color}08, inset 0 0 0 1px ${stat.color}30`
-          : 'none',
+          ? `0 0 20px ${stat.color}20, 0 0 40px ${stat.color}08, inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px ${stat.color}30`
+          : 'inset 0 1px 0 rgba(255,255,255,0.03)',
         borderColor: hovered ? `${stat.color}50` : undefined,
       }}
       onMouseEnter={() => setHovered(true)}
@@ -524,7 +549,7 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
           animate={{ scale: hovered ? 1.2 : 1 }}
           transition={{ type: 'spring', stiffness: 400 }}
         >
-          {stat.icon}
+          <div style={{ filter: `drop-shadow(0 0 4px ${stat.color}40)` }}>{stat.icon}</div>
         </motion.div>
         <div className="text-xl md:text-2xl font-black tabular-nums" style={{ color: stat.color }}>
           {count}

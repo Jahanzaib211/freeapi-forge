@@ -402,3 +402,39 @@ kbd {
 .detail-panel-active {
   border-left: 2px solid #00FFB2;
 }
+
+/* ─── Task 7-a: Styling polish & mobile UX improvements ──────────── */
+
+/* Animated network background for hero */
+@keyframes network-shift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, 5px); }
+  100% { transform: translate(0, 0); }
+}
+.animate-network-shift {
+  animation: network-shift 20s ease-in-out infinite;
+}
+
+/* Icon neon glow utility */
+.icon-glow {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* Card inner highlight for depth */
+.card-inner-highlight {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* CTA button glow */
+.cta-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 178, 0.15), 0 0 40px rgba(0, 255, 178, 0.05);
+}
+.cta-glow:hover {
+  box-shadow: 0 0 30px rgba(0, 255, 178, 0.25), 0 0 60px rgba(0, 255, 178, 0.1);
+}
+
+/* Mobile touch target minimum */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}

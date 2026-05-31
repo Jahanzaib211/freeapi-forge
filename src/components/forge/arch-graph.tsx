@@ -17,7 +17,7 @@ import {
   ArrowRight, ChevronLeft, ChevronRight, Minus, Plus, RotateCcw,
   Layers, Shield, Cpu, HardDrive, Database, Globe, Terminal,
   Workflow, Boxes, ChevronDown, ChevronUp, Search, Filter,
-  Download
+  Download, Network, ZoomIn
 } from 'lucide-react';
 
 // Layout constants
@@ -558,12 +558,18 @@ export default function ArchGraph() {
           <div className="bg-card/80 backdrop-blur border border-border rounded-lg p-4 space-y-2">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Edge Types</h3>
             <div className="grid grid-cols-1 gap-1">
-              {Object.entries(EDGE_COLORS).map(([type, color]) => (
-                <div key={type} className="flex items-center gap-2 text-[10px]">
-                  <div className="w-4 h-0.5 rounded" style={{ backgroundColor: color }} />
-                  <span className="capitalize">{type}</span>
-                </div>
-              ))}
+              {Object.entries(EDGE_COLORS).map(([type, color]) => {
+                const count = filteredEdges.filter(e => e.type === type).length;
+                return (
+                  <div key={type} className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-0.5 rounded" style={{ backgroundColor: color }} />
+                      <span className="capitalize">{type}</span>
+                    </div>
+                    <span className="text-muted-foreground tabular-nums">{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -583,9 +589,34 @@ export default function ArchGraph() {
 
         {/* Graph Canvas */}
         <div className="flex-1 min-w-0">
+          {/* Stats Bar */}
+          <div className="flex items-center gap-3 px-3 py-1.5 bg-card/60 border border-border rounded-t-lg border-b-0 text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <Boxes size={10} className="text-[#00FFB2]" />
+              <span className="text-muted-foreground">Nodes:</span>
+              <span className="text-foreground font-semibold tabular-nums">{filteredNodes.length}/{NODES.length}</span>
+            </div>
+            <div className="w-px h-3 bg-border" />
+            <div className="flex items-center gap-1.5">
+              <Network size={10} className="text-[#38BDF8]" />
+              <span className="text-muted-foreground">Edges:</span>
+              <span className="text-foreground font-semibold tabular-nums">{filteredEdges.length}</span>
+            </div>
+            <div className="w-px h-3 bg-border" />
+            <div className="flex items-center gap-1.5">
+              <Search size={10} className="text-[#C084FC]" />
+              <span className="text-muted-foreground">Search:</span>
+              <span className="text-foreground font-semibold">{isSearchActive ? `${matchingNodeIds.size} matches` : 'None'}</span>
+            </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1.5">
+              <ZoomIn size={10} className="text-muted-foreground" />
+              <span className="text-muted-foreground font-mono tabular-nums">{Math.round(zoom * 100)}%</span>
+            </div>
+          </div>
           <div
             ref={containerRef}
-            className="relative bg-[#0a0a0f] border border-border rounded-lg overflow-hidden"
+            className="relative bg-[#0a0a0f] border border-border border-t-0 rounded-b-lg overflow-hidden"
             style={{ height: '700px', cursor: isDragState ? 'grabbing' : 'grab' }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -736,8 +767,9 @@ export default function ArchGraph() {
                       <rect
                         x={node.x - 2} y={node.y - 2}
                         width={NODE_W + 4} height={NODE_H + 4}
-                        fill="none" stroke="#EF4444" strokeWidth="1"
-                        opacity="0.3" rx="10"
+                        fill="none" stroke="#EF4444" strokeWidth="2"
+                        opacity="0.4" rx="10"
+                        className="animate-forge-pulse"
                       />
                     )}
                     {/* Selected/upstream/downstream highlights */}
@@ -771,7 +803,7 @@ export default function ArchGraph() {
                     <rect
                       x={node.x} y={node.y}
                       width={NODE_W} height={NODE_H}
-                      rx="6"
+                      rx={node.language === 'external' ? 12 : 6}
                       fill={isHovered || isSelected ? '#1a1a2e' : '#12121f'}
                       stroke={isHovered || isSelected ? langColor : (isSearchActive && isSearchMatch ? '#00FFB2' : '#2a2a3e')}
                       strokeWidth={isHovered || isSelected ? 1.5 : (isSearchActive && isSearchMatch ? 1.2 : 0.8)}
@@ -805,6 +837,16 @@ export default function ArchGraph() {
                       >
                         SPOF
                       </text>
+                    )}
+                    {/* Ready status checkmark dot */}
+                    {node.status === 'ready' && !node.spof && (
+                      <circle
+                        cx={node.x + NODE_W - 6}
+                        cy={node.y + 6}
+                        r="2.5"
+                        fill="#00FFB2"
+                        opacity="0.7"
+                      />
                     )}
                   </g>
                 );

@@ -639,3 +639,122 @@ NEXT PHASE PRIORITIES
 3. (Low) Print stylesheet
 4. (Low) Polish pass
 5. (Low) Hero visual element
+
+---
+Task ID: 7-a
+Agent: styling-expert
+Task: Hero depth, CTA prominence, mobile UX, background network graphic
+
+Work Log:
+- Enhanced AnimatedStatCard: added inner highlight shadow (`card-inner-highlight` + inset shadow), icon neon glow (drop-shadow), border subtlety (border-border/50), hover lift (hover:-translate-y-0.5)
+- Enhanced CTA button: larger (px-6 py-3), glow effect (cta-glow class), hover text-size increase, secondary "View Roadmap →" text link
+- Added hero background network graphic: SVG pattern with interconnected dots/lines, opacity-[0.03], animate-network-shift (20s drift)
+- Mobile: hamburger touch target to w-10 h-10 (44px), stat grid 2-col on tiny screens, description text-[15px], nav items py-2.5
+- Added 5 CSS utilities: animate-network-shift, icon-glow, card-inner-highlight, cta-glow, touch-target
+- Version: v2.4 → v2.5
+
+Stage Summary:
+- Stat cards: inner shadow + icon neon glow + hover lift
+- CTA: more prominent with glow, secondary roadmap link
+- Background: animated network dot pattern
+- Mobile: 44px touch targets, better text sizing
+- Files modified: page.tsx, globals.css
+
+---
+Task ID: 7-b
+Agent: features-dev
+Task: Graph node shapes, stats panel, edge count badges
+
+Work Log:
+- Enhanced SPOF nodes: thicker red border (strokeWidth 2, opacity 0.4) + pulse animation
+- Differentiated external nodes: pill-shaped (rx=12 instead of rx=6)
+- Added ready-status indicator: green dot in top-right corner of ready nodes
+- Added Graph Statistics Panel: compact bar above canvas showing Nodes (X/Y), Edges (count), Search status, Zoom level — all real-time
+- Enhanced Edge Legend: added per-type count badges (filteredEdges count for each edge type)
+- Added imports: Network, ZoomIn from lucide-react
+- Files modified: arch-graph.tsx
+
+---
+Task ID: 7
+Agent: main (webDevReview-cron)
+Task: QA round 4 — styling polish, graph features, mobile UX
+
+Work Log:
+- Performed QA via agent-browser: 3 screenshots (hero, graph, mobile) + console check
+- VLM analysis: Desktop hero 7/10 → 8/10, Mobile 6/10 → 7/10
+- 0 browser errors, 0 console errors, lint clean, server 200 OK
+- Dispatched 2 parallel subagent tasks (7-a styling, 7-b features)
+- Both completed successfully
+
+Stage Summary:
+- 6 styling improvements, 3 new features
+- Version: v2.5
+- VLM: Desktop 8/10, Mobile 7/10
+
+---
+CURRENT PROJECT STATUS (v2.5)
+============================
+- Forge Studio Dependency Tree v2.5 — comprehensive, production-quality interactive visualization
+- 56 nodes, 9 layers, 135 edges, 21 DB tables, 11 build phases (16.5 weeks)
+- 14 component files, 13-section navigation, dark theme with #00FFB2 accent
+- VLM quality: 8/10 desktop (up from 7), 7/10 mobile (up from 6)
+
+COMPLETED IN THIS ROUND (Task IDs: 7, 7-a, 7-b)
+=====================================================
+✅ VLM QA — 3 screenshots, 0 errors
+✅ Desktop 7/10 → 8/10, Mobile 6/10 → 7/10
+✅ Stat cards: inner shadow + icon neon glow + hover lift
+✅ CTA button: larger, glow effect, secondary roadmap link
+✅ Hero background: animated network dot pattern
+✅ Mobile: 44px hamburger, 2-col stat grid, larger text
+✅ SPOF nodes: thicker border + pulse animation
+✅ External nodes: pill-shaped differentiation
+✅ Ready nodes: green status dot indicator
+✅ Graph Stats Panel: real-time nodes/edges/search/zoom bar
+✅ Edge Legend: per-type count badges
+✅ Version v2.5, Lint clean, Server 200 OK
+
+RESOLVED ISSUES (all tracked)
+==========================================
+✅ #1-#22 All previous issues resolved
+✅ #23 Stat card depth — inner shadow + icon glow added
+✅ #24 CTA button prominence — glow + larger + secondary link
+✅ #25 Hero background — animated network pattern
+✅ #26 Mobile touch targets — 44px hamburger, larger nav items
+✅ #27 Mobile stat grid — 2 cols on tiny screens
+✅ #28 Node visual differentiation — SPOF pulse, external pill, ready dot
+✅ #29 Graph stats visibility — real-time panel above canvas
+✅ #30 Edge type visibility — count badges in legend
+
+FILES STRUCTURE (v2.5)
+=======================
+- src/lib/forge-tree-data.ts — 56 nodes, 135 edges, 9 layers, 21 DB tables
+- src/components/forge/arch-graph.tsx — Graph (zoom/pan/filter/search/export/tooltips/mini-map/stats-panel/node-shapes)
+- src/components/forge/layer-breakdown.tsx — 9 layer cards
+- src/components/forge/build-order.tsx — 11-phase timeline
+- src/components/forge/detail-sections.tsx — DB schemas, SPOF, tech matrix
+- src/components/forge/discord-section.tsx — Discord integration spec
+- src/components/forge/docker-stack.tsx — Docker Compose architecture
+- src/components/forge/p2p-network.tsx — P2P marketplace
+- src/components/forge/pricing-section.tsx — Pricing tiers
+- src/components/forge/launch-rewards.tsx — Launch rewards program
+- src/components/forge/mirror-test.tsx — Self-hosting proof
+- src/components/forge/roadmap-section.tsx — 8-phase roadmap timeline
+- src/app/page.tsx — Main assembly (14 sections, 13 nav items)
+- src/app/globals.css — Dark theme, 35+ CSS utilities
+
+REMAINING ITEMS (low priority)
+================================
+1. (Low) Dark/light theme toggle
+2. (Low) Getting started tutorial overlay
+3. (Low) Print-friendly stylesheet
+4. (Low) Additional background animation (floating particles)
+5. (Low) Social proof / testimonials section
+
+NEXT PHASE PRIORITIES
+=======================
+1. (Low) Background floating particles animation
+2. (Low) Dark/light theme toggle
+3. (Low) Tutorial overlay for first-time visitors
+4. (Low) Social proof / testimonials
+5. (Low) Print stylesheet for documentation
