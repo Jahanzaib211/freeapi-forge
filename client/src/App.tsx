@@ -56,8 +56,8 @@ import Benchmark from "./pages/Benchmark";
 import ProviderHealth from "./pages/ProviderHealth";
 import Webhooks from "./pages/Webhooks";
 import AILabHub from "./pages/AILabHub";
-import AuditLogs from "./pages/AuditLogs";
 import LocalModelManager from "./pages/LocalModelManager";
+import DeploymentMonitor from "./pages/DeploymentMonitor";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -96,6 +96,7 @@ function Router() {
       <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogPage /></DashboardLayout></ProtectedRoute>} />
       <Route path="/lab" component={() => <ProtectedRoute><DashboardLayout><AILabHub /></DashboardLayout></ProtectedRoute>} />
       <Route path="/dashboard" component={() => <ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
+      <Route path="/deployment-monitor" component={() => <ProtectedRoute><DashboardLayout><DeploymentMonitor /></DashboardLayout></ProtectedRoute>} />
       <Route path="/inference" component={() => <ProtectedRoute><DashboardLayout><InferenceLab /></DashboardLayout></ProtectedRoute>} />
       <Route path="/explorer" component={() => <ProtectedRoute><DashboardLayout><ModelExplorer /></DashboardLayout></ProtectedRoute>} />
       <Route path="/models" component={() => <ProtectedRoute><DashboardLayout><ModelManager /></DashboardLayout></ProtectedRoute>} />
@@ -132,7 +133,6 @@ function Router() {
       <Route path="/benchmark" component={() => <ProtectedRoute><DashboardLayout><Benchmark /></DashboardLayout></ProtectedRoute>} />
       <Route path="/provider-health" component={() => <ProtectedRoute><DashboardLayout><ProviderHealth /></DashboardLayout></ProtectedRoute>} />
       <Route path="/webhooks" component={() => <ProtectedRoute><DashboardLayout><Webhooks /></DashboardLayout></ProtectedRoute>} />
-      <Route path="/audit-logs" component={() => <ProtectedRoute><DashboardLayout><AuditLogs /></DashboardLayout></ProtectedRoute>} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

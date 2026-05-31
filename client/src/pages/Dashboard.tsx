@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, AlertCircle, CheckCircle2, Activity, TrendingUp, Zap, Database, Cpu, BarChart3 } from "lucide-react";
+import { Loader2, Send, AlertCircle, CheckCircle2, Activity, TrendingUp, Zap, Database, Cpu, BarChart3, Rocket, XCircle, Bell } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { trpc } from "@/lib/trpc";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const providersQuery = trpc.providers.status.useQuery(undefined, { refetchInterval: 3000 });
   const budgetQuery = trpc.budget.getMonthlySpend.useQuery({ teamId: "default" }, { refetchInterval: 5000 });
   const modelsQuery = trpc.catalog.getAll.useQuery(undefined, { refetchInterval: 10000 });
+  const deployHealthQuery = trpc.githubActions.getDeploymentHealth.useQuery(undefined, { refetchInterval: 30000 });
 
   const isLoading = liveStatsQuery.isLoading || hourlyQuery.isLoading || topModelsQuery.isLoading;
 
@@ -205,6 +206,40 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {deployHealthQuery.data && deployHealthQuery.data.totalRuns > 0 && (
+          <div className="mb-6">
+            {deployHealthQuery.data.lastDeployStatus === "failure" ? (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
+                <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-red-400 font-medium">Deployment Failure</span>
+                  <span className="text-slate-400 text-sm ml-2">Last deploy failed. {deployHealthQuery.data.failureCount} failure(s) in last {deployHealthQuery.data.totalRuns} runs.</span>
+                </div>
+                <a href="/deployment-monitor" className="text-sm text-red-400 hover:text-red-300 underline flex items-center gap-1">
+                  <Rocket className="w-4 h-4" /> View Deployments
+                </a>
+              </div>
+            ) : (
+              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 flex items-center gap-3">
+                <Rocket className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <div className="flex-1 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  <span className="text-slate-400 text-sm">
+                    Last deploy: <span className="text-green-400 font-medium">Passed</span>
+                    {" · "}{deployHealthQuery.data.successRate}% success rate (last {deployHealthQuery.data.totalRuns} runs)
+                    {deployHealthQuery.data.unreadAlerts > 0 && (
+                      <span className="ml-2 text-yellow-400"><Bell className="w-3 h-3 inline mr-1" />{deployHealthQuery.data.unreadAlerts} alerts</span>
+                    )}
+                  </span>
+                </div>
+                <a href="/deployment-monitor" className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1">
+                  <Rocket className="w-4 h-4" /> Monitor
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur">

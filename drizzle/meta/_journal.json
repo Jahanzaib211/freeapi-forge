@@ -15,6 +15,13 @@
       "when": 1780066061366,
       "tag": "0001_unusual_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780256818283,
+      "tag": "0002_friendly_whizzer",
+      "breakpoints": true
     }
   ]
 }

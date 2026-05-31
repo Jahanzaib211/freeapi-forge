@@ -63,6 +63,7 @@ import { discordRouter } from "./routers/discord";
 import { agentRouter as agentBuilderRouter } from "./routers/agents";
 import { mcpExplorerRouter } from "./routers/mcp-explorer";
 import { workflowRouter } from "./routers/workflows";
+import { githubActionsRouter } from "./routers/github-actions";
 import { customProviderService } from "./services/custom_provider";
 import { directProxyChat } from "./services/direct_proxy";
 
@@ -475,6 +476,9 @@ export const appRouter = router({
 
   // Agentic Workflows
   workflowRouter: workflowRouter,
+
+  // GitHub Actions Monitor
+  githubActions: githubActionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

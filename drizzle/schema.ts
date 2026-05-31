@@ -743,3 +743,62 @@ export const workflowWebhooks = pgTable("workflowWebhooks", {
 
 export type WorkflowWebhook = typeof workflowWebhooks.$inferSelect;
 export type InsertWorkflowWebhook = typeof workflowWebhooks.$inferInsert;
+
+// ─── GITHUB TOKENS ──────────────────────────────────────────────────────────────
+export const githubTokens = pgTable("githubTokens", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  token: text("token").notNull(),
+  scopes: text("scopes"),
+  username: varchar("username", { length: 128 }),
+  rateLimitRemaining: integer("rateLimitRemaining").default(5000).notNull(),
+  rateLimitReset: timestamp("rateLimitReset"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type GithubToken = typeof githubTokens.$inferSelect;
+export type InsertGithubToken = typeof githubTokens.$inferInsert;
+
+// ─── GITHUB ACTIONS RUNS ────────────────────────────────────────────────────────
+export const githubActionsRuns = pgTable("githubActionsRuns", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  repoFullName: varchar("repoFullName", { length: 255 }).notNull(),
+  runId: integer("runId").notNull(),
+  runNumber: integer("runNumber"),
+  workflowName: varchar("workflowName", { length: 255 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull(),
+  conclusion: varchar("conclusion", { length: 32 }),
+  event: varchar("event", { length: 32 }),
+  branch: varchar("branch", { length: 255 }),
+  commitSha: varchar("commitSha", { length: 40 }),
+  commitMessage: text("commitMessage"),
+  actor: varchar("actor", { length: 128 }),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  durationMs: integer("durationMs").default(0).notNull(),
+  jobsJson: text("jobsJson"),
+  annotationsJson: text("annotationsJson"),
+  htmlUrl: varchar("htmlUrl", { length: 1024 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GithubActionsRun = typeof githubActionsRuns.$inferSelect;
+export type InsertGithubActionsRun = typeof githubActionsRuns.$inferInsert;
+
+// ─── DEPLOYMENT ALERTS ──────────────────────────────────────────────────────────
+export const deploymentAlerts = pgTable("deploymentAlerts", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  tenantId: integer("tenantId").notNull(),
+  runId: integer("runId").notNull(),
+  alertType: varchar("alertType", { length: 32 }).notNull(),
+  severity: varchar("severity", { length: 16 }).notNull(),
+  message: text("message").notNull(),
+  isRead: integer("isRead").default(0).notNull(),
+  dismissedAt: timestamp("dismissedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DeploymentAlert = typeof deploymentAlerts.$inferSelect;
+export type InsertDeploymentAlert = typeof deploymentAlerts.$inferInsert;

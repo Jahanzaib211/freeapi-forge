@@ -63,6 +63,7 @@ import {
   Cable,
   HardDrive,
   Bell,
+  Rocket,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -87,6 +88,7 @@ const sidebarSections: Section[] = [
       { icon: Cpu, label: "AI Lab Hub", path: "/lab" },
       { icon: MessageSquare, label: "Playground", path: "/dashboard" },
       { icon: MessageCircle, label: "Chat", path: "/chat" },
+      { icon: Rocket, label: "Deployments", path: "/deployment-monitor" },
       { icon: Layers, label: "Inference Lab", path: "/inference" },
       { icon: Boxes, label: "Forge Builder", path: "/builder" },
       { icon: Bot, label: "Agents Builder", path: "/agents" },
@@ -103,7 +105,6 @@ const sidebarSections: Section[] = [
       { icon: HardDrive, label: "My MCPs", path: "/my-mcps" },
       { icon: Zap, label: "Skills", path: "/skills" },
       { icon: Shield, label: "Guardrails", path: "/guardrails" },
-      { icon: FileText, label: "Policies", path: "/guardrails" },
       { icon: Wrench, label: "Tools Hub", path: "/tools-hub" },
       { icon: FileCode, label: "Prompt Library", path: "/prompts" },
       { icon: GitCompare, label: "Benchmark", path: "/benchmark" },
