@@ -130,8 +130,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Focus ring with forge-green accent */
+  *:focus-visible {
+    outline: 2px solid #00FFB2;
+    outline-offset: 2px;
   }
 }
 
@@ -149,6 +157,12 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.40 0 0);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.30 0 0) oklch(0.11 0 0);
 }
 
 /* Forge glow animation */
@@ -193,4 +207,52 @@
 .bg-dots {
   background-image: radial-gradient(rgba(0,255,178,0.08) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(0,255,178,0.04) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Slide-up fade-in for scroll-triggered elements */
+@keyframes slide-up-fade-in {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up-fade-in {
+  animation: slide-up-fade-in 0.5s ease-out both;
+}
+
+/* Card glow hover effect */
+.card-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 20px rgba(0,255,178,0.06), 0 0 60px rgba(0,255,178,0.03);
+  border-color: rgba(0,255,178,0.25);
+}
+
+/* Enhanced card base styling for all section cards */
+@layer components {
+  .forge-card {
+    @apply bg-card/60 backdrop-blur border border-border overflow-hidden transition-all duration-300;
+    &:hover {
+      @apply border-border/80;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.02);
+    }
+  }
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, #00FFB2 0%, #38BDF8 50%, #C084FC 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

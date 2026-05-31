@@ -729,7 +729,7 @@ export const EDGES: ForgeEdge[] = [
 ];
 
 // ============================================================================
-// BUILD PHASES (16-week roadmap, 10 phases)
+// BUILD PHASES (16.5-week roadmap, 11 phases)
 // ============================================================================
 export const BUILD_PHASES: BuildPhase[] = [
   {
@@ -764,32 +764,38 @@ export const BUILD_PHASES: BuildPhase[] = [
     dependencies: ['stripe', 'express-server', 'postgres', 'redis'],
   },
   {
-    phase: 6, name: 'GitHub Repo Explorer', weeks: 1,
+    phase: 6, name: 'Discord Integration', weeks: 1.5,
+    components: ['discord-integration', 'discord-api'],
+    deliverables: ['Discord bot setup', 'Slash commands', 'Server management', 'AI chat bridge', 'Webhook automation', 'Role automation'],
+    dependencies: ['express-server', 'discord-api', 'postgres', 'redis', 'ws-server', 'inference-proxy'],
+  },
+  {
+    phase: 7, name: 'GitHub Repo Explorer', weeks: 1,
     components: ['github-explorer'],
     deliverables: ['Browse/clone repos', 'Issues/PRs view', 'Trigger Actions', 'File explorer'],
     dependencies: ['express-server', 'github-api', 'filesystem'],
   },
   {
-    phase: 7, name: 'TUI (Go + BubbleTea)', weeks: 2,
+    phase: 8, name: 'TUI (Go + BubbleTea)', weeks: 2,
     components: ['tui', 'cli'],
     deliverables: ['forge-tui binary', 'GPU graphs', 'Chat panel', 'Workflow runner', 'CLI commands'],
     dependencies: ['ws-server', 'rest-api'],
     parallel: ['browser-ext'],
   },
   {
-    phase: 8, name: 'Forge-to-Forge P2P', weeks: 1,
+    phase: 9, name: 'Forge-to-Forge P2P', weeks: 1,
     components: ['forge-p2p'],
     deliverables: ['Peer discovery', 'Compute marketplace', 'Reputation scores', 'P2P routing'],
     dependencies: ['circuit-breaker', 'redis', 'security-layer'],
   },
   {
-    phase: 9, name: 'Launch Rewards + Cloud', weeks: 1,
+    phase: 10, name: 'Launch Rewards + Cloud', weeks: 1,
     components: ['launch-rewards'],
     deliverables: ['30-day tier system', 'Cloud hosted app.forge.studio', 'CDN deployment'],
     dependencies: ['stripe', 'billing', 'nginx'],
   },
   {
-    phase: 10, name: 'Mirror Test', weeks: 1,
+    phase: 11, name: 'Mirror Test', weeks: 1,
     components: ['mirror-test', 'resource-mgr-ui'],
     deliverables: ['Self-hosting proof', 'Forge manages itself', 'End-to-end test', 'Performance benchmarks'],
     dependencies: ['github-explorer', 'native-vault', 'forge-builder', 'telemetry'],

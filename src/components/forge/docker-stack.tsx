@@ -92,8 +92,8 @@ const envVars = [
   { name: 'JWT_SECRET', value: '••••••••••••••••', required: true },
   { name: 'NODE_ENV', value: 'production', required: false },
   { name: 'ALLOWED_ORIGINS', value: 'http://localhost:5051', required: false },
-  { name: 'LITELLM_URL', value: '(optional — being removed)', required: false },
-  { name: 'LITELLM_API_KEY', value: '(optional — being removed)', required: false },
+  { name: 'LITELLM_URL', value: '(optional)', required: false },
+  { name: 'LITELLM_API_KEY', value: '(optional)', required: false },
 ];
 
 const nginxCapabilities = [

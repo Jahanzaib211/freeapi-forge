@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -21,21 +21,81 @@ import {
   AlertTriangle, Shield, Cpu, Database, Globe, Layers, Zap,
   Terminal, HardDrive, Server, Network, GitBranch, Boxes,
   Activity, BarChart3, Clock, CheckCircle2, ExternalLink,
-  ArrowDown, Menu, X, ChevronDown, MessageSquare
+  ArrowDown, ArrowUp, Menu, X, ChevronDown, MessageSquare
 } from 'lucide-react';
+
+// ─── SCROLL REVEAL SECTION ───────────────────────────────────────────
+function ScrollRevealSection({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-60px 0px 0px 0px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── SCROLL PROGRESS BAR ─────────────────────────────────────────────
+function ScrollProgressBar() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const handler = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
+    };
+    window.addEventListener('scroll', handler, { passive: true });
+    handler();
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+  return (
+    <div className="fixed top-14 left-0 right-0 z-40 h-[2px]">
+      <div
+        className="h-full bg-[#00FFB2] transition-[width] duration-100 ease-out"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+}
+
+// ─── BACK TO TOP BUTTON ──────────────────────────────────────────────
+function BackToTopButton() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const handler = () => setVisible(window.scrollY > 600);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  return (
+    <motion.button
+      onClick={scrollToTop}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={visible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3 }}
+      className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-[#00FFB2]/10 border border-[#00FFB2]/30 text-[#00FFB2] flex items-center justify-center hover:bg-[#00FFB2]/20 hover:border-[#00FFB2]/50 transition-colors cursor-pointer"
+      aria-label="Back to top"
+    >
+      <ArrowUp size={18} />
+    </motion.button>
+  );
+}
 
 // ─── NAVBAR ──────────────────────────────────────────────────────────────
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
 
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
-  }, []);
-
-  const navItems = [
+  const navItems: { label: string; href: string }[] = [
     { label: 'Graph', href: '#graph' },
     { label: 'Layers', href: '#layers' },
     { label: 'Build', href: '#build' },
@@ -44,10 +104,49 @@ function Navbar() {
     { label: 'P2P', href: '#p2p' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Rewards', href: '#rewards' },
+    { label: 'Mirror', href: '#mirror' },
     { label: 'Database', href: '#database' },
     { label: 'SPOF', href: '#spof' },
     { label: 'Tech', href: '#tech' },
   ];
+
+  useEffect(() => {
+    const scrollHandler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    // IntersectionObserver for active section tracking
+    const sectionIds = navItems.map(item => item.href.slice(1));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -75% 0px', threshold: 0 }
+    );
+    // Small delay to ensure DOM elements exist
+    const timer = setTimeout(() => {
+      sectionIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el);
+      });
+    }, 100);
+
+    return () => {
+      window.removeEventListener('scroll', scrollHandler);
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
+
+  const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    const el = document.getElementById(href.slice(1));
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -60,21 +159,32 @@ function Navbar() {
           </div>
           <div>
             <span className="text-sm font-bold text-foreground">Forge Studio</span>
-            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.0</span>
+            <span className="text-[10px] text-muted-foreground/60 ml-2 hidden sm:inline">Dependency Tree v2.1</span>
           </div>
         </div>
 
         {/* Desktop nav */}
         <div className="hidden lg:flex items-center gap-1">
-          {navItems.map(item => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-[#00FFB2] hover:bg-[#00FFB2]/5 rounded-md transition-all duration-200"
-            >
-              {item.label}
-            </a>
-          ))}
+          {navItems.map(item => {
+            const isActive = activeSection === item.href.slice(1);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                className={`relative px-2.5 py-1.5 text-[11px] rounded-md transition-all duration-200 ${
+                  isActive
+                    ? 'text-[#00FFB2] bg-[#00FFB2]/5'
+                    : 'text-muted-foreground hover:text-[#00FFB2] hover:bg-[#00FFB2]/5'
+                }`}
+              >
+                {item.label}
+                {isActive && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#00FFB2]" />
+                )}
+              </a>
+            );
+          })}
         </div>
 
         {/* Mobile menu toggle */}
@@ -84,26 +194,37 @@ function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-border"
-        >
-          <div className="px-4 py-3 space-y-1">
-            {navItems.map(item => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded transition-colors"
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="lg:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-border overflow-hidden"
+          >
+            <div className="px-4 py-3 space-y-1">
+              {navItems.map(item => {
+                const isActive = activeSection === item.href.slice(1);
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    className={`block px-3 py-2 text-sm rounded transition-colors ${
+                      isActive
+                        ? 'text-[#00FFB2] bg-[#00FFB2]/5'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                    }`}
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
@@ -126,16 +247,21 @@ function Hero() {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <Badge variant="outline" className="mb-4 text-[10px] h-6 border-[#00FFB2]/30 text-[#00FFB2] bg-[#00FFB2]/5">
-            <Activity size={12} className="mr-1 animate-forge-pulse" />
-            AI Lab Level — 20 DevOps Engineers Mapped
+          <Badge variant="outline" className="mb-4 text-[10px] h-6 border-[#00FFB2]/30 text-[#00FFB2] bg-[#00FFB2]/5 relative overflow-hidden">
+            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00FFB2]/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" />
+            <Activity size={12} className="mr-1 animate-forge-pulse relative z-10" />
+            <span className="relative z-10">AI Lab Level — 20 DevOps Engineers Mapped</span>
           </Badge>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight">
+          {/* Glow behind title */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[300px] md:w-[500px] h-[80px] bg-[#00FFB2] rounded-full opacity-[0.08] blur-[60px]" />
+          </div>
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-tight relative">
             Forge Studio
             <br />
             <span className="text-[#00FFB2]">Dependency Tree</span>
           </h1>
-          <p className="mt-4 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Complete architecture map: <span className="text-foreground/90 font-semibold">{TREE_STATS.totalNodes} components</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalEdges} connections</span>,{' '}
             <span className="text-foreground/90 font-semibold">{TREE_STATS.totalLayers} layers</span>,{' '}
@@ -201,7 +327,7 @@ function SectionDivider() {
   return (
     <div className="py-4 flex items-center justify-center">
       <div className="h-px flex-1 max-w-[200px] bg-gradient-to-r from-transparent to-[#00FFB2]/20" />
-      <ChevronDown size={16} className="text-muted-foreground/30 mx-2" />
+      <ChevronDown size={16} className="text-muted-foreground/30 mx-2 animate-[forge-pulse_2s_ease-in-out_infinite]" />
       <div className="h-px flex-1 max-w-[200px] bg-gradient-to-l from-transparent to-[#00FFB2]/20" />
     </div>
   );
@@ -212,7 +338,7 @@ function OverviewStrip() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 md:px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#00FFB2]/20 hover:shadow-[0_0_24px_rgba(0,255,178,0.06)]">
           <div className="h-0.5 bg-gradient-to-r from-[#00FFB2] to-[#38BDF8]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -229,7 +355,7 @@ function OverviewStrip() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#38BDF8]/20 hover:shadow-[0_0_24px_rgba(56,189,248,0.06)]">
           <div className="h-0.5 bg-gradient-to-r from-[#38BDF8] to-[#C084FC]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -240,13 +366,14 @@ function OverviewStrip() {
               <p>• <span className="text-foreground/80">Docker Compose</span>: app, PG17, Redis7, Qdrant, Prometheus, Grafana</p>
               <p>• <span className="text-foreground/80">GPU monitoring</span>: nvidia-dcgm-exporter → Prometheus → Grafana</p>
               <p>• <span className="text-foreground/80">Telemetry</span>: WebSocket + :5051/metrics + MQTT + 30-day SQLite</p>
-              <p>• <span className="text-foreground/80">Ports</span>: 5050 (app), 5051 (metrics), 5052 (WS), 5432 (PG), 6379 (Redis), 6333 (Qdrant)</p>
+              <p>• <span className="text-foreground/80">Ports</span>: 5051 (app + WS + metrics), 5434 (PG), 6379 (Redis), 6333 (Qdrant)</p>
+              <p>• <span className="text-foreground/80">Discord</span>: Bot gateway (WebSocket), slash commands, webhooks, role automation</p>
               <p>• <span className="text-foreground/80">One-line install</span>: curl | bash → http://localhost:5051</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden">
+        <Card className="bg-card/60 backdrop-blur border-border overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:border-[#C084FC]/20 hover:shadow-[0_0_24px_rgba(192,132,252,0.06)]">
           <div className="h-0.5 bg-gradient-to-r from-[#C084FC] to-[#F472B6]" />
           <CardContent className="p-4">
             <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-2">
@@ -273,28 +400,31 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
-    const duration = 1200;
-    const steps = 30;
-    const increment = stat.value / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= stat.value) {
-        setCount(stat.value);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
+    const duration = 1400;
+    const startTime = performance.now();
+    let rafId: number;
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic for smooth deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * stat.value));
+      if (progress < 1) {
+        rafId = requestAnimationFrame(animate);
       }
-    }, duration / steps);
-    return () => clearInterval(timer);
+    };
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
   }, [stat.value]);
 
   return (
     <Card
       className="bg-card/60 backdrop-blur border-border transition-all duration-300 cursor-default"
       style={{
-        boxShadow: hovered ? `0 0 20px ${stat.color}15, 0 0 40px ${stat.color}08` : 'none',
-        borderColor: hovered ? `${stat.color}40` : undefined,
+        boxShadow: hovered
+          ? `0 0 20px ${stat.color}20, 0 0 40px ${stat.color}08, inset 0 0 0 1px ${stat.color}30`
+          : 'none',
+        borderColor: hovered ? `${stat.color}50` : undefined,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -320,8 +450,9 @@ function AnimatedStatCard({ stat }: { stat: { label: string; value: number; icon
 // ─── FOOTER ──────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="mt-20 border-t border-border bg-[#0a0a0f]">
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-8">
+    <footer className="mt-20 bg-[#0a0a0f]">
+      <div className="h-px bg-gradient-to-r from-transparent via-[#00FFB2]/30 to-transparent" />
+      <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded bg-[#00FFB2]/10 flex items-center justify-center">
@@ -354,108 +485,134 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0f] bg-dots text-[#e0e0e0]">
       <Navbar />
+      <ScrollProgressBar />
 
       <main className="flex-1">
         <Hero />
         <OverviewStrip />
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Interactive Architecture Graph */}
-        <section id="graph" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Network size={18} className="text-[#00FFB2]" />
-              Interactive Architecture Graph
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Click nodes to inspect. Drag to pan. Use controls to filter by layer, edge type, or critical path. {TREE_STATS.totalNodes} nodes, {TREE_STATS.totalEdges} connections.
-            </p>
-          </div>
-          <ArchGraph />
-        </section>
+        <ScrollRevealSection>
+          <section id="graph" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Network size={18} className="text-[#00FFB2]" />
+                Interactive Architecture Graph
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Click nodes to inspect. Drag to pan. Use controls to filter by layer, edge type, or critical path. {TREE_STATS.totalNodes} nodes, {TREE_STATS.totalEdges} connections.
+              </p>
+            </div>
+            <ArchGraph />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Layer Breakdown */}
-        <section id="layers" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <LayerBreakdown />
-        </section>
+        <ScrollRevealSection>
+          <section id="layers" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <LayerBreakdown />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Build Order */}
-        <section id="build" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <BuildOrder />
-        </section>
+        <ScrollRevealSection>
+          <section id="build" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <BuildOrder />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Discord Integration */}
-        <section id="discord" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <DiscordSection />
-        </section>
+        <ScrollRevealSection>
+          <section id="discord" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <DiscordSection />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Docker Stack */}
-        <section id="docker" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <DockerStack />
-        </section>
+        <ScrollRevealSection>
+          <section id="docker" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <DockerStack />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* P2P Network */}
-        <section id="p2p" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <P2PNetwork />
-        </section>
+        <ScrollRevealSection>
+          <section id="p2p" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <P2PNetwork />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Pricing & Licensing */}
-        <section id="pricing" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <PricingSection />
-        </section>
+        <ScrollRevealSection>
+          <section id="pricing" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <PricingSection />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Launch Rewards */}
-        <section id="rewards" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <LaunchRewards />
-        </section>
+        <ScrollRevealSection>
+          <section id="rewards" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <LaunchRewards />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Mirror Test */}
-        <section id="mirror" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <MirrorTest />
-        </section>
+        <ScrollRevealSection>
+          <section id="mirror" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <MirrorTest />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Database Schemas */}
-        <section id="database" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <DatabaseSchemas />
-        </section>
+        <ScrollRevealSection>
+          <section id="database" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <DatabaseSchemas />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* SPOF & Risk */}
-        <section id="spof" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <SpofAnalysis />
-        </section>
+        <ScrollRevealSection>
+          <section id="spof" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <SpofAnalysis />
+          </section>
+        </ScrollRevealSection>
 
-        <SectionDivider />
+        <ScrollRevealSection><SectionDivider /></ScrollRevealSection>
 
         {/* Tech Matrix */}
-        <section id="tech" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
-          <TechMatrix />
-        </section>
+        <ScrollRevealSection>
+          <section id="tech" className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+            <TechMatrix />
+          </section>
+        </ScrollRevealSection>
 
         {/* Bottom spacing for footer */}
         <div className="h-12" />
       </main>
 
       <Footer />
+      <BackToTopButton />
     </div>
   );
 }
